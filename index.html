@@ -9,23 +9,23 @@
 <body>
 
 <!-- TELA DE LOGIN -->
-<div class="login-box">
-  <div class="login-logos">
-    <img src="logo-prefeitura.png" alt="Logo Prefeitura de Mineiros" class="login-logo">
-    <img src="logo-secretaria.png" alt="Logo SME" class="login-logo">
+<div id="tela-login" class="tela-interna ativa">
+  <div class="login-box">
+    <div class="login-logos">
+      <img src="logo-prefeitura.png" alt="Logo Prefeitura de Mineiros" class="login-logo">
+      <img src="logo-secretaria.png" alt="Logo SME" class="login-logo">
+    </div>
+    <h1>Estoque</h1>
+    <form id="form-login">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" required autocomplete="username">
+      <label for="login-senha">Senha</label>
+      <input type="password" id="login-senha" required autocomplete="current-password">
+      <button type="submit">Entrar</button>
+      <p id="login-erro" class="msg-erro" role="alert"></p>
+    </form>
   </div>
-  <h1>Estoque</h1>
-  <form id="form-login">
-    <label for="login-email">Email</label>
-    <input type="email" id="login-email" required autocomplete="username">
-    <label for="login-senha">Senha</label>
-    <input type="password" id="login-senha" required autocomplete="current-password">
-    <button type="submit">Entrar</button>
-    <p id="login-erro" class="msg-erro" role="alert"></p>
-  </form>
 </div>
-  </div>
-</section>
 
 <!-- APP INTERNO -->
 <div id="app" class="oculto">
