@@ -43,9 +43,9 @@
       <div id="feedback-global" class="feedback oculto"></div>
 
       <section id="tela-dashboard" class="tela-interna ativa">
-        <div class="header-dashboard" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div class="header-dashboard">
           <h2>Visão Geral</h2>
-          <button id="btn-exportar-pdf" class="btn-primario" style="background-color: var(--cor-primaria); color: #fff; padding: 0.6rem 1.2rem; border: none; border-radius: var(--raio); font-weight: 600;">Exportar Relatório PDF</button>
+          <button id="btn-exportar-pdf" class="btn-primario">Exportar Relatório PDF</button>
         </div>
         <div class="cards-grid">
           <div class="card">
@@ -109,6 +109,9 @@
         </form>
 
         <h3>Produtos cadastrados</h3>
+        <div class="filtros-avancados">
+          <input type="text" id="busca-produto" placeholder="Buscar por nome, categoria ou tamanho...">
+        </div>
         <div class="tabela-wrap">
           <table>
             <thead>
@@ -116,7 +119,7 @@
             </thead>
             <tbody id="tbody-produtos"></tbody>
           </table>
-          <div class="paginacao-controles" style="display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; background: var(--cor-branco); border-top: 1px solid var(--cor-borda);">
+          <div class="paginacao-controles">
             <button id="btn-prev-prod" class="btn-secundario" disabled>&larr; Anterior</button>
             <span id="info-pagina-prod">Página 1</span>
             <button id="btn-next-prod" class="btn-secundario">Próxima &rarr;</button>
@@ -157,13 +160,13 @@
         </div>
 
         <h3>Histórico de Movimentações</h3>
-        <div class="filtros-avancados" style="display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap;">
-          <input type="text" id="busca-texto" placeholder="Buscar produto ou responsável" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 200px;">
-          <input type="date" id="busca-data" aria-label="Filtrar por data" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 150px;">
-          <select id="filtro-produto" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 200px;">
+        <div class="filtros-avancados">
+          <input type="text" id="busca-texto" placeholder="Buscar produto ou responsável">
+          <input type="date" id="busca-data" aria-label="Filtrar por data">
+          <select id="filtro-produto">
             <option value="">Todos os produtos</option>
           </select>
-          <select id="filtro-tipo" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 150px;">
+          <select id="filtro-tipo">
             <option value="">Todos os tipos</option>
             <option value="entrada">Entradas</option>
             <option value="saida">Saídas</option>
@@ -177,7 +180,7 @@
             </thead>
             <tbody id="tbody-movimentacoes"></tbody>
           </table>
-          <div class="paginacao-controles" style="display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; background: var(--cor-branco); border-top: 1px solid var(--cor-borda);">
+          <div class="paginacao-controles">
             <button id="btn-prev-mov" class="btn-secundario" disabled>&larr; Anterior</button>
             <span id="info-pagina-mov">Página 1</span>
             <button id="btn-next-mov" class="btn-secundario">Próxima &rarr;</button>
