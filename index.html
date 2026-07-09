@@ -9,11 +9,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+
   <div id="tela-login" class="tela-interna ativa">
     <div class="login-box">
       <div class="login-logos">
-        <img src="assets/logo-prefeitura.png" alt="Logo Prefeitura" class="login-logo">
-        <img src="assets/logo-secretaria.png" alt="Logo Secretaria" class="login-logo">
+        <img src="assets/logo-prefeitura.png" alt="Logo Prefeitura de Mineiros" class="login-logo">
+        <img src="assets/logo-secretaria.png" alt="Logo Secretaria Municipal de Educação" class="login-logo">
       </div>
       <h1>Estoque</h1>
       <form id="form-login">
@@ -42,9 +43,9 @@
       <div id="feedback-global" class="feedback oculto"></div>
 
       <section id="tela-dashboard" class="tela-interna ativa">
-        <div class="header-dashboard">
+        <div class="header-dashboard" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
           <h2>Visão Geral</h2>
-          <button id="btn-exportar-pdf" class="btn-primario">Exportar Relatório PDF</button>
+          <button id="btn-exportar-pdf" class="btn-primario" style="background-color: var(--cor-primaria); color: #fff; padding: 0.6rem 1.2rem; border: none; border-radius: var(--raio); font-weight: 600;">Exportar Relatório PDF</button>
         </div>
         <div class="cards-grid">
           <div class="card">
@@ -60,24 +61,115 @@
             <span class="card-valor" id="kpi-estoque-baixo">-</span>
           </div>
         </div>
+
+        <h3>Produtos com estoque baixo</h3>
+        <ul id="lista-estoque-baixo" class="lista-simples"></ul>
+
+        <h3>Últimas movimentações</h3>
+        <ul id="lista-ultimas-mov" class="lista-simples"></ul>
+      </section>
+
+      <section id="tela-produtos" class="tela-interna">
+        <h2>Cadastro de Produtos</h2>
+
+        <div class="acoes-topo">
+          <button type="button" id="btn-abrir-tamanhos" class="btn-secundario">Cadastro em Lote (Tamanhos)</button>
+        </div>
+
+        <form id="form-produto" class="form-card">
+          <input type="hidden" id="produto-id">
+          <div class="form-linha">
+            <div class="campo">
+              <label for="produto-nome">Nome</label>
+              <input type="text" id="produto-nome" required>
+            </div>
+            <div class="campo">
+              <label for="produto-categoria">Categoria</label>
+              <input type="text" id="produto-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
+            </div>
+          </div>
+          <div class="form-linha">
+            <div class="campo">
+              <label for="produto-tamanho">Tamanho/Numeração</label>
+              <input type="text" id="produto-tamanho" required>
+            </div>
+            <div class="campo">
+              <label for="produto-quantidade">Quantidade inicial</label>
+              <input type="number" id="produto-quantidade" min="0" required>
+            </div>
+            <div class="campo">
+              <label for="produto-minimo">Estoque mínimo</label>
+              <input type="number" id="produto-minimo" min="0" required>
+            </div>
+          </div>
+          <div class="acoes-form">
+            <button type="submit" id="btn-salvar-produto">Cadastrar Produto</button>
+            <button type="button" id="btn-cancelar-edicao" class="btn-secundario oculto">Cancelar edição</button>
+          </div>
+        </form>
+
+        <h3>Produtos cadastrados</h3>
+        <div class="tabela-wrap">
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Categoria</th><th>Tamanho</th><th>Qtd.</th><th>Mín.</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="tbody-produtos"></tbody>
+          </table>
+          <div class="paginacao-controles" style="display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; background: var(--cor-branco); border-top: 1px solid var(--cor-borda);">
+            <button id="btn-prev-prod" class="btn-secundario" disabled>&larr; Anterior</button>
+            <span id="info-pagina-prod">Página 1</span>
+            <button id="btn-next-prod" class="btn-secundario">Próxima &rarr;</button>
+          </div>
+        </div>
       </section>
 
       <section id="tela-movimentacoes" class="tela-interna">
         <h2>Entradas e Saídas</h2>
-        <!-- Contêineres de formulários mantidos visualmente para brevidade -->
-        
+        <div class="mov-grid">
+          <form id="form-entrada" class="form-card">
+            <h3>Registrar Entrada</h3>
+            <label for="entrada-produto">Produto</label>
+            <select id="entrada-produto" required></select>
+            <label for="entrada-quantidade">Quantidade</label>
+            <input type="number" id="entrada-quantidade" min="1" required>
+            <label for="entrada-data">Data</label>
+            <input type="date" id="entrada-data" required>
+            <label for="entrada-obs">Observação (opcional)</label>
+            <textarea id="entrada-obs"></textarea>
+            <button type="submit">Registrar Entrada</button>
+          </form>
+
+          <form id="form-saida" class="form-card">
+            <h3>Registrar Saída</h3>
+            <label for="saida-produto">Produto</label>
+            <select id="saida-produto" required></select>
+            <label for="saida-quantidade">Quantidade</label>
+            <input type="number" id="saida-quantidade" min="1" required>
+            <label for="saida-data">Data</label>
+            <input type="date" id="saida-data" required>
+            <label for="saida-retirado-por">Retirado por</label>
+            <input type="text" id="saida-retirado-por" required>
+            <label for="saida-obs">Observação (opcional)</label>
+            <textarea id="saida-obs"></textarea>
+            <button type="submit">Registrar Saída</button>
+          </form>
+        </div>
+
         <h3>Histórico de Movimentações</h3>
-        <div class="filtros-avancados">
-          <input type="text" id="busca-texto" placeholder="Buscar produto ou responsável">
-          <input type="date" id="busca-data" aria-label="Filtrar por data">
-          <select id="filtro-produto"><option value="">Todos os produtos</option></select>
-          <select id="filtro-tipo">
+        <div class="filtros-avancados" style="display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          <input type="text" id="busca-texto" placeholder="Buscar produto ou responsável" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 200px;">
+          <input type="date" id="busca-data" aria-label="Filtrar por data" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 150px;">
+          <select id="filtro-produto" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 200px;">
+            <option value="">Todos os produtos</option>
+          </select>
+          <select id="filtro-tipo" style="padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio); flex: 1; min-width: 150px;">
             <option value="">Todos os tipos</option>
             <option value="entrada">Entradas</option>
             <option value="saida">Saídas</option>
           </select>
         </div>
-        
+
         <div class="tabela-wrap">
           <table>
             <thead>
@@ -85,7 +177,7 @@
             </thead>
             <tbody id="tbody-movimentacoes"></tbody>
           </table>
-          <div class="paginacao-controles">
+          <div class="paginacao-controles" style="display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; background: var(--cor-branco); border-top: 1px solid var(--cor-borda);">
             <button id="btn-prev-mov" class="btn-secundario" disabled>&larr; Anterior</button>
             <span id="info-pagina-mov">Página 1</span>
             <button id="btn-next-mov" class="btn-secundario">Próxima &rarr;</button>
@@ -94,6 +186,56 @@
       </section>
     </main>
   </div>
+
+  <div id="modal-tamanhos" class="modal-overlay oculto">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Cadastro em Lote de Tamanhos</h2>
+        <button type="button" id="btn-fechar-tamanhos" class="btn-fechar" aria-label="Fechar">&times;</button>
+      </div>
+
+      <form id="form-tamanhos-lote">
+        <div class="form-linha">
+          <div class="campo">
+            <label for="lote-nome">Nome do produto</label>
+            <input type="text" id="lote-nome" required>
+          </div>
+          <div class="campo">
+            <label for="lote-categoria">Categoria</label>
+            <input type="text" id="lote-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
+          </div>
+        </div>
+
+        <div id="lote-linhas-tamanhos"></div>
+
+        <button type="button" id="btn-add-linha-tamanho" class="btn-secundario">+ Adicionar tamanho</button>
+
+        <div class="acoes-form">
+          <button type="submit">Salvar Tamanhos</button>
+          <button type="button" id="btn-cancelar-lote" class="btn-secundario">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <template id="template-linha-tamanho">
+    <div class="linha-tamanho form-linha">
+      <div class="campo">
+        <label>Tamanho</label>
+        <input type="text" class="lote-tamanho-input" required>
+      </div>
+      <div class="campo">
+        <label>Quantidade</label>
+        <input type="number" class="lote-quantidade-input" min="0" required>
+      </div>
+      <div class="campo">
+        <label>Estoque mínimo</label>
+        <input type="number" class="lote-minimo-input" min="0" required>
+      </div>
+      <button type="button" class="btn-remover-linha btn-secundario" aria-label="Remover tamanho">Remover</button>
+    </div>
+  </template>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
