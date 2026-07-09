@@ -70,6 +70,11 @@
     <!-- PRODUTOS -->
     <section id="tela-produtos" class="tela-interna">
       <h2>Cadastro de Produtos</h2>
+
+      <div class="acoes-topo">
+        <button type="button" id="btn-abrir-tamanhos" class="btn-secundario">Cadastro em Lote (Tamanhos)</button>
+      </div>
+
       <form id="form-produto" class="form-card">
         <input type="hidden" id="produto-id">
         <div class="form-linha">
@@ -166,6 +171,57 @@
     </section>
   </main>
 </div>
+
+<!-- MODAL: CADASTRO EM LOTE DE TAMANHOS -->
+<div id="modal-tamanhos" class="modal-overlay oculto">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Cadastro em Lote de Tamanhos</h2>
+      <button type="button" id="btn-fechar-tamanhos" class="btn-fechar" aria-label="Fechar">&times;</button>
+    </div>
+
+    <form id="form-tamanhos-lote">
+      <div class="form-linha">
+        <div class="campo">
+          <label for="lote-nome">Nome do produto</label>
+          <input type="text" id="lote-nome" required>
+        </div>
+        <div class="campo">
+          <label for="lote-categoria">Categoria</label>
+          <input type="text" id="lote-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
+        </div>
+      </div>
+
+      <div id="lote-linhas-tamanhos"></div>
+
+      <button type="button" id="btn-add-linha-tamanho" class="btn-secundario">+ Adicionar tamanho</button>
+
+      <div class="acoes-form">
+        <button type="submit">Salvar Tamanhos</button>
+        <button type="button" id="btn-cancelar-lote" class="btn-secundario">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Template de linha (usado via JS) -->
+<template id="template-linha-tamanho">
+  <div class="linha-tamanho form-linha">
+    <div class="campo">
+      <label>Tamanho</label>
+      <input type="text" class="lote-tamanho-input" required>
+    </div>
+    <div class="campo">
+      <label>Quantidade</label>
+      <input type="number" class="lote-quantidade-input" min="0" required>
+    </div>
+    <div class="campo">
+      <label>Estoque mínimo</label>
+      <input type="number" class="lote-minimo-input" min="0" required>
+    </div>
+    <button type="button" class="btn-remover-linha btn-secundario" aria-label="Remover tamanho">Remover</button>
+  </div>
+</template>
 
 <script type="module" src="script.js"></script>
 </body>
