@@ -1,369 +1,168 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SAREM - Sistema de Avaliação e Resultados</title>
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Estoque de Uniformes</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div id="pagina-login">
-    <div class="login-card">
-      <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px">
-        <img src="logo-prefeitura.png" alt="Prefeitura" style="height:80px;object-fit:contain" onerror="this.style.display='none'">
-        <img src="logo-secretaria.png" alt="SME" style="height:80px;object-fit:contain" onerror="this.style.display='none'">
-      </div>
-      <div class="login-title">SAREM</div>
-      <div class="login-subtitle">Sistema de Avaliação e Resultados<br>Secretaria Municipal de Educação — Mineiros/GO</div>
-      <div class="form-group"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@sarem.com"></div>
-      <div class="form-group"><label>Senha</label><input type="password" id="login-senha" placeholder=""></div>
-      <button class="btn btn-primary" id="btn-login">Entrar</button>
-      <div id="login-erro"></div>
-    </div>
+<!-- TELA DE LOGIN -->
+<section id="tela-login" class="tela ativa">
+  <div class="login-box">
+    <h1>Estoque de Uniformes</h1>
+    <form id="form-login">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" required autocomplete="username">
+      <label for="login-senha">Senha</label>
+      <input type="password" id="login-senha" required autocomplete="current-password">
+      <button type="submit">Entrar</button>
+      <p id="login-erro" class="msg-erro" role="alert"></p>
+    </form>
   </div>
+</section>
 
-  <div id="pagina-app" class="oculto">
-    <header class="header">
-      <div class="header-logo">
-        <div style="background: #ffffff; padding: 6px 16px; border-radius: 8px; display: flex; gap: 12px; align-items: center;">
-          <img src="logo-prefeitura.png" alt="Prefeitura" style="height:32px; width:auto; object-fit:contain" onerror="this.style.display='none'">
-          <img src="logo-secretaria.png" alt="SME" style="height:32px; width:auto; object-fit:contain" onerror="this.style.display='none'">
-          <span class="header-titulo" style="color: var(--primary); margin-left: 4px;">SAREM</span>
-        </div>
-      </div>
-      <div class="header-right">
-        <span class="header-user" id="header-usuario"></span>
-        <button class="btn btn-sm btn-logout" id="btn-logout">Sair</button>
-      </div>
-    </header>
-    
-    <nav class="nav">
-      <button class="nav-btn ativo" data-secao="dashboard">Dashboard</button>
-      <button class="nav-btn" data-secao="lancamento">Lançar Notas</button>
-      <button class="nav-btn" data-secao="comparativo">Comparativo</button>
-      <button class="nav-btn admin-only oculto" id="btn-admin" data-secao="admin">Admin</button>
+<!-- APP INTERNO -->
+<div id="app" class="oculto">
+  <header class="topo">
+    <h1>Estoque de Uniformes</h1>
+    <nav class="menu" aria-label="Navegação principal">
+      <button class="nav-btn ativo" data-tela="dashboard">Dashboard</button>
+      <button class="nav-btn" data-tela="produtos">Produtos</button>
+      <button class="nav-btn" data-tela="movimentacoes">Movimentações</button>
     </nav>
-    
-    <main class="conteudo">
+    <button id="btn-logout" class="btn-secundario">Sair</button>
+  </header>
 
-      <div id="secao-dashboard">
-        <div class="cards-grid">
-          <div class="card-resumo"><div class="card-resumo-icon">👨‍🎓</div><div><div class="card-resumo-valor" id="card-total">0</div><div class="card-resumo-label">Alunos Avaliados</div></div></div>
-          <div class="card-resumo"><div class="card-resumo-icon">📖</div><div><div class="card-resumo-valor" id="card-media-port">-</div><div class="card-resumo-label" id="label-media-port">Média Global (Port)</div></div></div>
-          <div class="card-resumo"><div class="card-resumo-icon">🔢</div><div><div class="card-resumo-valor" id="card-media-mat">-</div><div class="card-resumo-label" id="label-media-mat">Média Global (Mat)</div></div></div>
-          <div class="card-resumo"><div class="card-resumo-icon">🏫</div><div><div class="card-resumo-valor" id="card-escolas">0</div><div class="card-resumo-label">Escolas Participantes</div></div></div>
+  <main>
+    <div id="feedback-global" class="feedback oculto"></div>
+
+    <!-- DASHBOARD -->
+    <section id="tela-dashboard" class="tela-interna ativa">
+      <h2>Visão Geral</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <span class="card-label">Total de itens em estoque</span>
+          <span class="card-valor" id="kpi-total-itens">-</span>
         </div>
-
-        <div class="filtros-card">
-          <div class="filtros-titulo">🔍 Filtros</div>
-          <div class="filtros-grid">
-            <select id="filtro-ano">
-              <option value="">Todos os Anos</option>
-              <option value="2025">2025</option>
-              <option value="2026" selected>2026</option>
-              <option value="2027">2027</option>
-              <option value="2028">2028</option>
-            </select>
-            <select id="filtro-escola"><option value="">Todas as Escolas</option></select>
-            <select id="filtro-serie">
-              <option value="">Todas as Séries</option>
-              <option value="1º Ano">1º Ano</option>
-              <option value="2º Ano">2º Ano</option>
-              <option value="3º Ano">3º Ano</option>
-              <option value="4º Ano">4º Ano</option>
-              <option value="5º Ano">5º Ano</option>
-            </select>
-            <select id="filtro-turma"><option value="">Todas as Turmas</option></select>
-            <select id="filtro-avaliadora"><option value="">Todas as Avaliadoras</option></select>
-            <select id="filtro-periodo">
-              <option value="">Ambos os Períodos</option>
-              <option value="inicial">Diagnóstico Inicial</option>
-              <option value="final">Diagnóstico Final</option>
-            </select>
-          </div>
-          <div class="filtros-acoes">
-            <button class="btn btn-primary" id="btn-aplicar-filtros">Aplicar Filtros</button>
-            <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-limpar-filtros">Limpar</button>
-          </div>
+        <div class="card">
+          <span class="card-label">Produtos cadastrados</span>
+          <span class="card-valor" id="kpi-total-produtos">-</span>
         </div>
-
-        <div class="filtros-card">
-          <div class="filtros-titulo">🔎 Pesquisa Rápida</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <input type="text" id="pesquisa-geral" placeholder="Buscar por aluno, escola, turma, série..."
-              style="flex:1;min-width:250px;padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">
-            <button class="btn btn-primary btn-sm" id="btn-pesquisa">Buscar</button>
-            <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-limpar-pesquisa">Limpar</button>
-          </div>
-        </div>
-
-        <div class="graficos-grid" style="margin-bottom:24px">
-          <div class="grafico-card">
-            <div class="grafico-titulo" id="titulo-ranking-port">🏆 Ranking de Escolas — Português</div>
-            <div id="ranking-port" class="ranking-lista"></div>
-          </div>
-          <div class="grafico-card">
-            <div class="grafico-titulo" id="titulo-ranking-mat">🏆 Ranking de Escolas — Matemática</div>
-            <div id="ranking-mat" class="ranking-lista"></div>
-          </div>
-        </div>
-
-        <div class="graficos-grid">
-          <div class="grafico-card"><div class="grafico-titulo">📊 Distribuição — Português</div><div class="grafico-container"><canvas id="grafico-dist-port"></canvas></div></div>
-          <div class="grafico-card"><div class="grafico-titulo">📊 Distribuição — Matemática</div><div class="grafico-container"><canvas id="grafico-dist-mat"></canvas></div></div>
-        </div>
-
-        <div class="tabela-card oculto" id="card-resultados">
-          <div class="tabela-header">
-            <div class="tabela-titulo">📋 Resultados</div>
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <span id="resultados-count" style="font-size:12px;color:var(--text-light)"></span>
-              <button class="btn btn-danger btn-sm" id="btn-gerar-pdf">📄 Gerar PDF do Relatório</button>
-            </div>
-          </div>
-          <div class="tabela-wrapper">
-            <table id="tabela-dados">
-              <thead><tr><th>Ano</th><th>Aluno</th><th>Escola</th><th>Série</th><th>Turma</th><th>Período</th><th>Português</th><th>Matemática</th><th>Média</th></tr></thead>
-              <tbody id="tabela-corpo"></tbody>
-            </table>
-          </div>
-          <div id="tabela-vazia" style="text-align:center;padding:32px;color:var(--text-light);font-size:14px" class="oculto">Nenhum registro encontrado.</div>
-          
-          <div id="paginacao-resultados" class="oculto" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:20px;">
-            <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-pagina-anterior">⬅️ Anterior</button>
-            <span id="texto-paginacao" style="font-size:14px; font-weight:600; color:var(--text-light);">Página 1 de 1</span>
-            <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-pagina-proxima">Próxima ➡️</button>
-          </div>
+        <div class="card card-alerta">
+          <span class="card-label">Itens com estoque baixo</span>
+          <span class="card-valor" id="kpi-estoque-baixo">-</span>
         </div>
       </div>
 
-      <div id="secao-lancamento" class="oculto">
-        <div class="lancamento-card" style="max-width:960px;">
-          <div class="lancamento-titulo">✏️ Lançar Notas por Turma</div>
-          
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;">
-            <div class="form-group" style="margin:0;">
-              <label>Ano de Aplicação</label>
-              <select id="l-ano">
-                <option value="2025">2025</option>
-                <option value="2026" selected>2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>Escola</label>
-              <select id="l-escola"><option value="">Selecione...</option></select>
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>Série</label>
-              <select id="l-serie"><option value="">Selecione...</option></select>
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>Turma</label>
-              <select id="l-turma"><option value="">Selecione...</option></select>
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>Período</label>
-              <select id="l-periodo">
-                <option value="inicial">Diagnóstico Inicial</option>
-                <option value="final">Diagnóstico Final</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn btn-primary" id="btn-carregar-alunos" style="margin-bottom:24px;">🔍 Carregar Alunos</button>
+      <h3>Produtos com estoque baixo</h3>
+      <ul id="lista-estoque-baixo" class="lista-simples"></ul>
 
-          <div id="lancamento-tabela-wrapper" class="oculto">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-              <div style="font-size:14px;font-weight:700;color:var(--primary);" id="lancamento-turma-titulo"></div>
-              
-              <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-                <div id="status-lancamento" style="display:flex; gap:8px;">
-                  <span class="badge badge-azul" id="badge-matriculados">Matriculados: 0</span>
-                  <span class="badge badge-verde" id="badge-lancados">Lançados: 0</span>
-                  <span class="badge badge-vermelho" id="badge-pendentes">Pendentes: 0</span>
-                </div>
-                <div id="medias-lancamento" style="display:flex; gap:8px;">
-                  <span class="badge badge-azul" id="badge-media-turma-port">Média Port: —</span>
-                  <span class="badge badge-azul" id="badge-media-turma-mat">Média Mat: —</span>
-                </div>
-              </div>
-              </div>
+      <h3>Últimas movimentações</h3>
+      <ul id="lista-ultimas-mov" class="lista-simples"></ul>
+    </section>
 
-            <div style="overflow-x:auto;">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width:40px;">#</th>
-                    <th>Nome do Aluno</th>
-                    <th style="width:130px;text-align:center;">📖 Português</th>
-                    <th style="width:130px;text-align:center;">🔢 Matemática</th>
-                    <th style="width:90px;text-align:center;">Média</th>
-                  </tr>
-                </thead>
-                <tbody id="lancamento-tabela-corpo"></tbody>
-              </table>
-            </div>
-            <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
-              <button class="btn btn-success" id="btn-salvar-turma">💾 Salvar Todas as Notas</button>
-              <button class="btn" style="background:#ecf0f1;color:var(--text);" id="btn-limpar-notas">🗑️ Limpar Formulário</button>
-            </div>
+    <!-- PRODUTOS -->
+    <section id="tela-produtos" class="tela-interna">
+      <h2>Cadastro de Produtos</h2>
+      <form id="form-produto" class="form-card">
+        <input type="hidden" id="produto-id">
+        <div class="form-linha">
+          <div class="campo">
+            <label for="produto-nome">Nome</label>
+            <input type="text" id="produto-nome" required>
           </div>
-          
-          <div id="lancamento-vazio" style="text-align:center;padding:40px;color:var(--text-light);font-size:14px;">
-            Selecione o ano, escola, série e turma para carregar os alunos.
+          <div class="campo">
+            <label for="produto-categoria">Categoria</label>
+            <input type="text" id="produto-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
           </div>
         </div>
+        <div class="form-linha">
+          <div class="campo">
+            <label for="produto-tamanho">Tamanho/Numeração</label>
+            <input type="text" id="produto-tamanho" required>
+          </div>
+          <div class="campo">
+            <label for="produto-quantidade">Quantidade inicial</label>
+            <input type="number" id="produto-quantidade" min="0" required>
+          </div>
+          <div class="campo">
+            <label for="produto-minimo">Estoque mínimo</label>
+            <input type="number" id="produto-minimo" min="0" required>
+          </div>
+        </div>
+        <div class="acoes-form">
+          <button type="submit" id="btn-salvar-produto">Cadastrar Produto</button>
+          <button type="button" id="btn-cancelar-edicao" class="btn-secundario oculto">Cancelar edição</button>
+        </div>
+      </form>
+
+      <h3>Produtos cadastrados</h3>
+      <div class="tabela-wrap">
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>Categoria</th><th>Tamanho</th><th>Qtd.</th><th>Mín.</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="tbody-produtos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MOVIMENTAÇÕES -->
+    <section id="tela-movimentacoes" class="tela-interna">
+      <h2>Entradas e Saídas</h2>
+      <div class="mov-grid">
+        <form id="form-entrada" class="form-card">
+          <h3>Registrar Entrada</h3>
+          <label for="entrada-produto">Produto</label>
+          <select id="entrada-produto" required></select>
+          <label for="entrada-quantidade">Quantidade</label>
+          <input type="number" id="entrada-quantidade" min="1" required>
+          <label for="entrada-data">Data</label>
+          <input type="date" id="entrada-data" required>
+          <label for="entrada-obs">Observação (opcional)</label>
+          <textarea id="entrada-obs"></textarea>
+          <button type="submit">Registrar Entrada</button>
+        </form>
+
+        <form id="form-saida" class="form-card">
+          <h3>Registrar Saída</h3>
+          <label for="saida-produto">Produto</label>
+          <select id="saida-produto" required></select>
+          <label for="saida-quantidade">Quantidade</label>
+          <input type="number" id="saida-quantidade" min="1" required>
+          <label for="saida-data">Data</label>
+          <input type="date" id="saida-data" required>
+          <label for="saida-retirado-por">Retirado por</label>
+          <input type="text" id="saida-retirado-por" required>
+          <label for="saida-obs">Observação (opcional)</label>
+          <textarea id="saida-obs"></textarea>
+          <button type="submit">Registrar Saída</button>
+        </form>
       </div>
 
-      <div id="secao-comparativo" class="oculto">
-        <div class="comp-aviso">ℹ️ Esta seção exibe a evolução entre o <strong>Diagnóstico Inicial</strong> e o <strong>Diagnóstico Final</strong>.</div>
-        <div class="filtros-card">
-          <div class="filtros-titulo">🔍 Filtros do Comparativo</div>
-          <div class="filtros-grid">
-            <select id="comp-ano">
-              <option value="2025">2025</option>
-              <option value="2026" selected>2026</option>
-              <option value="2027">2027</option>
-            </select>
-            <select id="comp-escola"><option value="">Todas as Escolas</option></select>
-            <select id="comp-serie">
-              <option value="">Todas as Séries</option>
-              <option value="1º Ano">1º Ano</option>
-              <option value="2º Ano">2º Ano</option>
-              <option value="3º Ano">3º Ano</option>
-              <option value="4º Ano">4º Ano</option>
-              <option value="5º Ano">5º Ano</option>
-            </select>
-          </div>
-          <div class="filtros-acoes">
-            <button class="btn btn-primary" id="btn-gerar-comparativo">Gerar Comparativo</button>
-          </div>
-        </div>
-        <div class="graficos-grid">
-          <div class="grafico-card"><div class="grafico-titulo">📖 Evolução — Português</div><div class="grafico-container"><canvas id="grafico-comp-port"></canvas></div></div>
-          <div class="grafico-card"><div class="grafico-titulo">🔢 Evolução — Matemática</div><div class="grafico-container"><canvas id="grafico-comp-mat"></canvas></div></div>
-        </div>
-      </div>
-
-      <div id="secao-admin" class="oculto">
-        <div class="graficos-grid">
-          
-          <div class="admin-card" style="margin-bottom: 0;">
-            <div class="admin-titulo">👥 Usuários do Sistema</div>
-            <div class="admin-sub">Controle quem pode acessar o SAREM.</div>
-            <div id="lista-usuarios-admin" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;">
-              <p style="font-size:13px; color:var(--text-light); text-align:center;">Carregando usuários...</p>
-            </div>
-            <button class="btn btn-sm btn-primary" id="btn-abrir-modal-usuario" style="width: 100%;">+ Adicionar Novo Usuário</button>
-          </div>
-
-          <div class="admin-card" style="margin-bottom: 0;">
-            <div class="admin-titulo">🏫 Gerenciamento de Escolas</div>
-            <div class="admin-sub">Adicione novas escolas ao sistema.</div>
-            <div class="form-group">
-              <label>Nome da Nova Escola</label>
-              <input type="text" id="admin-nova-escola" placeholder="Ex: EM Nova Esperança">
-            </div>
-            <button class="btn btn-success" id="btn-adicionar-escola" style="width: 100%;">+ Adicionar Escola</button>
-          </div>
-        </div>
-
-        <div class="admin-card" style="max-width: 100%; margin-top: 24px;">
-          <div class="admin-titulo">🔄 Transferência de Aluno</div>
-          <div class="admin-sub">Localize o aluno na turma atual e selecione o novo destino.</div>
-          
-          <h4 style="margin-bottom: 12px; color: var(--primary); font-size: 15px;">📍 Origem (Onde o aluno está agora)</h4>
-          <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
-            <div class="form-group" style="flex:1; min-width: 200px; margin-bottom: 0;">
-              <label>Escola Atual</label>
-              <select id="admin-origem-escola"><option value="">Selecione...</option></select>
-            </div>
-            <div class="form-group" style="flex:1; min-width: 120px; margin-bottom: 0;">
-              <label>Série Atual</label>
-              <select id="admin-origem-serie" disabled><option value="">Aguardando escola...</option></select>
-            </div>
-            <div class="form-group" style="flex:1; min-width: 120px; margin-bottom: 0;">
-              <label>Turma Atual</label>
-              <select id="admin-origem-turma" disabled><option value="">Aguardando série...</option></select>
-            </div>
-            <div class="form-group" style="flex:2; min-width: 250px; margin-bottom: 0;">
-              <label>Selecione o Aluno</label>
-              <select id="admin-origem-aluno" disabled><option value="">Aguardando turma...</option></select>
-            </div>
-          </div>
-
-          <h4 style="margin-bottom: 12px; color: var(--success); font-size: 15px;">🎯 Destino (Para onde o aluno vai)</h4>
-          <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 20px;">
-            <div class="form-group" style="flex:2; min-width: 250px; margin-bottom: 0;">
-              <label>Nova Escola</label>
-              <select id="admin-destino-escola"><option value="">Selecione...</option></select>
-            </div>
-            <div class="form-group" style="flex:1; min-width: 120px; margin-bottom: 0;">
-              <label>Nova Série</label>
-              <select id="admin-destino-serie">
-                <option value="1º Ano">1º Ano</option><option value="2º Ano">2º Ano</option><option value="3º Ano">3º Ano</option><option value="4º Ano">4º Ano</option><option value="5º Ano">5º Ano</option>
-              </select>
-            </div>
-            <div class="form-group" style="flex:1; min-width: 100px; margin-bottom: 0;">
-              <label>Nova Turma</label>
-              <input type="text" id="admin-destino-turma" placeholder="Ex: B">
-            </div>
-          </div>
-
-          <button class="btn btn-primary" id="btn-transferir-aluno" disabled>Realizar Transferência</button>
-        </div>
-
-        <div class="admin-card" style="max-width: 100%; margin-top: 24px; border: 1px solid var(--danger);">
-          <div class="admin-titulo" style="color:var(--danger)">⚠️ Zona de Perigo</div>
-          <div class="admin-sub">Ações irreversíveis no banco de dados.</div>
-          <button class="btn btn-danger" id="btn-limpar-tudo">🗑️ Limpar Todos os Registros de Notas</button>
-          <p style="font-size:12px;color:var(--text-light);margin-top:8px;">Apaga todas as notas, mas não exclui os alunos matriculados.</p>
-        </div>
-
-      </div>
-    </main>
-  </div>
-
-  <div id="modal-novo-usuario" class="oculto" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
-    <div style="background:white; padding:32px; border-radius:16px; width:90%; max-width:420px; box-shadow:0 10px 30px rgba(0,0,0,0.25);">
-      <h3 style="margin-bottom:24px; color:var(--primary); font-size: 20px;">👤 Cadastrar Usuário</h3>
-      
-      <div class="form-group">
-        <label>Nome / Identificação</label>
-        <input type="text" id="modal-user-nome" placeholder="Ex: Ana (Professora)">
-      </div>
-      <div class="form-group">
-        <label>E-mail de Acesso</label>
-        <input type="email" id="modal-user-email" placeholder="ana@sarem.com">
-      </div>
-      <div class="form-group">
-        <label>Nível de Acesso</label>
-        <select id="modal-user-cargo">
-          <option value="avaliador">Avaliador (Apenas lançar/ver notas)</option>
-          <option value="admin">Administrador (Acesso total)</option>
+      <h3>Histórico de Movimentações</h3>
+      <div class="filtros">
+        <select id="filtro-produto"><option value="">Todos os produtos</option></select>
+        <select id="filtro-tipo">
+          <option value="">Todos os tipos</option>
+          <option value="entrada">Entradas</option>
+          <option value="saida">Saídas</option>
         </select>
       </div>
-      
-      <div style="display:flex; gap:12px; margin-top:28px;">
-        <button class="btn btn-success" style="flex:1;" id="btn-salvar-usuario">Salvar</button>
-        <button class="btn" style="flex:1; background:#ecf0f1; color:var(--text);" id="btn-fechar-modal-usuario">Cancelar</button>
+      <div class="tabela-wrap">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Tipo</th><th>Produto</th><th>Qtd.</th><th>Retirado por</th><th>Obs.</th></tr>
+          </thead>
+          <tbody id="tbody-movimentacoes"></tbody>
+        </table>
       </div>
-      <p style="font-size:11px; color:var(--text-light); margin-top:16px; text-align:center;">Para que a pessoa consiga acessar, a senha dela precisa ser criada no painel "Authentication" do Firebase.</p>
-    </div>
-  </div>
+    </section>
+  </main>
+</div>
 
-  <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
-
-  <script src="app.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
