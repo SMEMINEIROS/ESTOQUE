@@ -32,20 +32,54 @@ function formatarData(dataISO) {
   return `${dia}/${mes}/${ano}`;
 }
 
-// ============================================================================
-// AUTENTICAÇÃO E NAVEGAÇÃO
-// ============================================================================
 let listenersAtivos = false;
 
 document.getElementById("form-login")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("login-email").value.trim();
   const senha = document.getElementById("login-senha").value;
+  const erroEl = document.getElementById("login-erro");
+  
+  erroEl.textContent = "";
+  
   try {
     await signInWithEmailAndPassword(auth, email, senha);
   } catch (err) {
-    document.getElementById("login-erro").textContent = "Erro ao fazer login. Verifique os dados.";
+    erroEl.textContent = "Erro ao fazer login. Verifique os dados.";
   }
+});
+
+document.getElementById("btn-logout")?.addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, (user) => {
+  const appEl = document.getElementById("app");
+  const telaLogin = document.getElementById("tela-login");
+  
+  if (user) {
+    telaLogin.classList.add("oculto");
+    appEl.classList.remove("oculto");
+    if (!listenersAtivos) {
+      iniciarListeners();
+      listenersAtivos = true;
+    }
+  } else {
+    appEl.classList.add("oculto");
+    telaLogin.classList.remove("oculto");
+  }
+});
+
+const navBtns = document.querySelectorAll(".nav-btn");
+const telas = document.querySelectorAll("#app .tela-interna");
+
+navBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const destino = btn.dataset.tela;
+    navBtns.forEach((b) => b.classList.remove("ativo"));
+    btn.classList.add("ativo");
+    telas.forEach((tela) => {
+      tela.classList.toggle("ativa", tela.id === `tela-${destino}`);
+    });
+  });
 });
 
 document.getElementById("btn-logout")?.addEventListener("click", () => signOut(auth));
