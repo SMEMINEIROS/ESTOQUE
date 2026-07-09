@@ -9,6 +9,7 @@ const produtosCol = collection(db, "produtos");
 const movimentacoesCol = collection(db, "movimentacoes");
 
 let produtosCache = [];
+let produtosFiltrados = [];
 let movimentacoesCache = [];
 let movimentacoesFiltradas = [];
 
@@ -91,7 +92,7 @@ navBtns.forEach((btn) => {
 function iniciarListeners() {
   onSnapshot(query(produtosCol, orderBy("nome")), (snapshot) => {
     produtosCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderizarTabelaProdutos();
+    aplicarFiltrosProdutos();
     atualizarSelectsProdutos();
     atualizarDashboard();
   }, (err) => mostrarFeedback("Erro ao carregar produtos.", "erro"));
@@ -104,7 +105,7 @@ function iniciarListeners() {
 }
 
 // ============================================================================
-// DASHBOARD
+// DASHBOARD E GERAÇÃO DE PDF
 // ============================================================================
 function atualizarDashboard() {
   const totalItens = produtosCache.reduce((soma, p) => soma + p.quantidade, 0);
@@ -130,9 +131,6 @@ function atualizarDashboard() {
   }
 }
 
-// ============================================================================
-// GERAÇÃO DE PDF
-// ============================================================================
 document.getElementById('btn-exportar-pdf')?.addEventListener('click', () => {
   if (!window.jspdf) {
     mostrarFeedback("Biblioteca PDF não carregada.", "erro");
@@ -169,7 +167,7 @@ document.getElementById('btn-exportar-pdf')?.addEventListener('click', () => {
 });
 
 // ============================================================================
-// PRODUTOS (CRUD E PAGINAÇÃO)
+// PRODUTOS (CRUD, FILTRO E PAGINAÇÃO)
 // ============================================================================
 const formProduto = document.getElementById("form-produto");
 formProduto?.addEventListener("submit", async (e) => {
@@ -229,6 +227,21 @@ window.excluirProduto = async function(id) {
   }
 };
 
+function aplicarFiltrosProdutos() {
+  const termo = document.getElementById("busca-produto")?.value.toLowerCase() || "";
+  
+  produtosFiltrados = produtosCache.filter(p => 
+    p.nome.toLowerCase().includes(termo) ||
+    p.categoria.toLowerCase().includes(termo) ||
+    p.tamanho.toLowerCase().includes(termo)
+  );
+  
+  estadoPaginacao.produtos.atual = 1;
+  renderizarTabelaProdutos();
+}
+
+document.getElementById("busca-produto")?.addEventListener("input", aplicarFiltrosProdutos);
+
 function renderizarTabelaProdutos() {
   const tbody = document.getElementById("tbody-produtos");
   if (!tbody) return;
@@ -236,7 +249,7 @@ function renderizarTabelaProdutos() {
   const { atual, limite } = estadoPaginacao.produtos;
   const inicio = (atual - 1) * limite;
   const fim = inicio + limite;
-  const itensPagina = produtosCache.slice(inicio, fim);
+  const itensPagina = produtosFiltrados.slice(inicio, fim);
 
   tbody.innerHTML = itensPagina.map(p => `
     <tr>
@@ -259,7 +272,7 @@ function atualizarControlesPaginacaoProdutos() {
   const btnPrev = document.getElementById("btn-prev-prod");
   const btnNext = document.getElementById("btn-next-prod");
   const info = document.getElementById("info-pagina-prod");
-  const totalPaginas = Math.ceil(produtosCache.length / estadoPaginacao.produtos.limite) || 1;
+  const totalPaginas = Math.ceil(produtosFiltrados.length / estadoPaginacao.produtos.limite) || 1;
 
   if (info) info.textContent = `Página ${estadoPaginacao.produtos.atual} de ${totalPaginas}`;
   if (btnPrev) btnPrev.disabled = estadoPaginacao.produtos.atual === 1;
@@ -274,7 +287,7 @@ document.getElementById("btn-prev-prod")?.addEventListener("click", () => {
 });
 
 document.getElementById("btn-next-prod")?.addEventListener("click", () => {
-  const totalPaginas = Math.ceil(produtosCache.length / estadoPaginacao.produtos.limite);
+  const totalPaginas = Math.ceil(produtosFiltrados.length / estadoPaginacao.produtos.limite);
   if (estadoPaginacao.produtos.atual < totalPaginas) {
     estadoPaginacao.produtos.atual++;
     renderizarTabelaProdutos();
@@ -282,7 +295,7 @@ document.getElementById("btn-next-prod")?.addEventListener("click", () => {
 });
 
 // ============================================================================
-// MOVIMENTAÇÕES (ENTRADA, SAÍDA, FILTROS E PAGINAÇÃO)
+// MOVIMENTAÇÕES E MODAL DE LOTE
 // ============================================================================
 function atualizarSelectsProdutos() {
   const opcoes = produtosCache.map(p => `<option value="${p.id}">${p.nome} - ${p.categoria} - ${p.tamanho}</option>`).join("");
@@ -412,9 +425,6 @@ document.getElementById("btn-next-mov")?.addEventListener("click", () => {
   }
 });
 
-// ============================================================================
-// MODAL DE CADASTRO EM LOTE
-// ============================================================================
 const modalTamanhos = document.getElementById("modal-tamanhos");
 const containerLinhas = document.getElementById("lote-linhas-tamanhos");
 const templateLinha = document.getElementById("template-linha-tamanho");
