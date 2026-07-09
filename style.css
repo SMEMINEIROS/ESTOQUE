@@ -172,3 +172,61 @@ table tr:last-child td { border-bottom: none; }
   .menu { width: 100%; justify-content: space-between; }
   .form-linha { flex-direction: column; }
 }
+.login-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 32px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-logos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.login-logo {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-box h1 {
+  font-size: 1.4rem;
+  color: var(--cor-texto-secundario, #555);
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: #eef2fb;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.login-box button {
+  width: 100%;
+  padding: 14px;
+  background: var(--cor-primaria, #e05a1c);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.login-box button:hover {
+  opacity: 0.9;
+}
+
