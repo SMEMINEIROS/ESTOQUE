@@ -1,6 +1,18 @@
 /* ==========================================================================
-   1. RESET E VARIÁVEIS (Atualizadas para visual mais limpo)
+   1. RESET E VARIÁVEIS
    ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
 :root {
   --cor-primaria: #0f172a;
   --cor-primaria-hover: #1e293b;
@@ -12,22 +24,236 @@
   --cor-texto: #0f172a;
   --cor-texto-suave: #475569;
   --cor-borda: #e2e8f0;
+  --cor-perigo: #d9364a;
+  --cor-perigo-fundo: #fdeced;
+  --cor-sucesso: #1f9d55;
+  --cor-sucesso-fundo: #e8f8ee;
 
   --raio: 12px;
   --sombra: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --sombra-modal: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  --espaco-xs: 0.5rem;
+  --espaco-sm: 1rem;
+  --espaco-md: 1.5rem;
+  --espaco-lg: 2.5rem;
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
   background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+ul {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   2. UTILITÁRIOS
+   ========================================================================== */
+.oculto {
+  display: none !important;
+}
+
+.tela-interna {
+  display: none;
+}
+
+.tela-interna.ativa {
+  display: block;
+}
+
+.msg-erro {
+  color: var(--cor-perigo);
+  background: var(--cor-perigo-fundo);
+  padding: var(--espaco-sm);
+  border-radius: var(--raio);
+  margin-top: var(--espaco-sm);
+  font-size: 0.9rem;
+}
+
+.msg-erro:empty {
+  display: none;
+}
+
+.feedback {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio);
+  margin-bottom: var(--espaco-md);
+  font-weight: 600;
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+.feedback.erro {
+  background: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+/* ==========================================================================
+   3. TELA DE LOGIN
+   ========================================================================== */
+#tela-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--espaco-md);
+}
+
+#tela-login.oculto {
+  display: none;
+}
+
+.login-box {
+  background: var(--cor-branco);
+  padding: var(--espaco-lg);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.login-logos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-md);
+}
+
+.login-logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-box h1 {
+  margin-bottom: var(--espaco-md);
+  color: var(--cor-primaria);
+  font-size: 1.5rem;
+}
+
+#form-login {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: var(--espaco-xs);
+}
+
+#form-login label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  margin-top: var(--espaco-xs);
+}
+
+#form-login input {
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  transition: border-color 0.2s;
+}
+
+#form-login input:focus {
+  outline: none;
+  border-color: var(--cor-destaque);
+}
+
+#form-login button {
+  margin-top: var(--espaco-sm);
+  padding: 0.8rem;
+  border: none;
+  border-radius: var(--raio);
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+
+#form-login button:hover {
+  background: var(--cor-primaria-hover);
+}
+
+/* ==========================================================================
+   4. LAYOUT DO APP E NAVEGAÇÃO
+   ========================================================================== */
+.topo {
+  background: var(--cor-branco);
+  border-bottom: 1px solid var(--cor-borda);
+  padding: var(--espaco-sm) var(--espaco-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+}
+
+.topo h1 {
+  font-size: 1.25rem;
+  color: var(--cor-primaria);
+}
+
+.menu {
+  display: flex;
+  gap: var(--espaco-xs);
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  border: none;
+  background: transparent;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--raio);
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: var(--cor-fundo);
   color: var(--cor-texto);
 }
 
-.header-dashboard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+.nav-btn.ativo {
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
+}
+
+.btn-secundario {
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-branco);
+  color: var(--cor-texto);
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--raio);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-secundario:hover {
+  background: var(--cor-fundo);
 }
 
 .btn-primario {
@@ -44,28 +270,361 @@ body {
   background-color: var(--cor-destaque-hover);
 }
 
-.paginacao-controles {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--cor-branco);
-  border-top: 1px solid var(--cor-borda);
+main {
+  padding: var(--espaco-lg) var(--espaco-md);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
+main h2 {
+  margin-bottom: var(--espaco-md);
+  color: var(--cor-texto);
+}
+
+main h3 {
+  margin: var(--espaco-lg) 0 var(--espaco-sm);
+  color: var(--cor-texto);
+  font-size: 1.1rem;
+}
+
+/* ==========================================================================
+   5. DASHBOARD
+   ========================================================================== */
+.header-dashboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.card {
+  background: var(--cor-branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: var(--espaco-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+  border: 1px solid var(--cor-borda);
+}
+
+.card-label {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+  font-weight: 500;
+}
+
+.card-valor {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cor-primaria);
+}
+
+.card-alerta .card-valor {
+  color: var(--cor-perigo);
+}
+
+.lista-simples li {
+  background: var(--cor-branco);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio);
+  margin-bottom: var(--espaco-xs);
+  box-shadow: var(--sombra);
+  font-size: 0.95rem;
+  border: 1px solid var(--cor-borda);
+}
+
+/* ==========================================================================
+   6. FORMULÁRIOS
+   ========================================================================== */
+.acoes-topo {
+  margin-bottom: var(--espaco-md);
+}
+
+.form-card {
+  background: var(--cor-branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: var(--espaco-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+  border: 1px solid var(--cor-borda);
+}
+
+.form-linha {
+  display: flex;
+  gap: var(--espaco-md);
+  flex-wrap: wrap;
+}
+
+.campo {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.campo label,
+.form-card > label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.campo input,
+.campo select,
+.form-card input,
+.form-card select,
+.form-card textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.campo input:focus,
+.form-card input:focus,
+.form-card select:focus,
+.form-card textarea:focus {
+  outline: none;
+  border-color: var(--cor-destaque);
+}
+
+.form-card textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.acoes-form {
+  display: flex;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-sm);
+}
+
+.acoes-form button[type="submit"],
+.form-card button[type="submit"] {
+  border: none;
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--raio);
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.acoes-form button[type="submit"]:hover,
+.form-card button[type="submit"]:hover {
+  background: var(--cor-primaria-hover);
+}
+
+.mov-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--espaco-md);
+}
+
+/* ==========================================================================
+   7. FILTROS E PAGINAÇÃO
+   ========================================================================== */
 .filtros-avancados {
   display: flex;
-  gap: 0.8rem;
-  margin-bottom: 1rem;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
   flex-wrap: wrap;
+  background: var(--cor-branco);
+  padding: var(--espaco-sm);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  border: 1px solid var(--cor-borda);
 }
 
 .filtros-avancados input, 
 .filtros-avancados select {
-  padding: 0.6rem;
+  padding: 0.75rem;
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
   flex: 1;
   min-width: 200px;
+}
+
+.paginacao-controles {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md);
+  background: var(--cor-branco);
+  border-top: 1px solid var(--cor-borda);
+  border-bottom-left-radius: var(--raio);
+  border-bottom-right-radius: var(--raio);
+}
+
+.paginacao-controles span {
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+/* ==========================================================================
+   8. TABELAS
+   ========================================================================== */
+.tabela-wrap {
+  background: var(--cor-branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  border: 1px solid var(--cor-borda);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+thead {
+  background: var(--cor-fundo);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: 0.95rem;
+}
+
+th {
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--cor-fundo);
+}
+
+.acao-editar,
+.acao-excluir {
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-right: var(--espaco-sm);
+}
+
+.acao-editar {
+  color: var(--cor-destaque);
+}
+
+.acao-excluir {
+  color: var(--cor-perigo);
+}
+
+/* ==========================================================================
+   9. MODAL
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espaco-md);
+  z-index: 100;
+}
+
+.modal-box {
+  background: var(--cor-branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-modal);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--espaco-lg);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--espaco-md);
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.btn-fechar {
+  border: none;
+  background: transparent;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--cor-texto-suave);
+  transition: color 0.2s;
+}
+
+.btn-fechar:hover {
+  color: var(--cor-perigo);
+}
+
+.linha-tamanho {
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--espaco-sm);
+  margin-bottom: var(--espaco-sm);
+  align-items: flex-end;
+}
+
+.btn-remover-linha {
+  flex: 0 0 auto;
+  height: fit-content;
+}
+
+#btn-add-linha-tamanho {
+  margin-bottom: var(--espaco-md);
+}
+
+/* ==========================================================================
+   10. RESPONSIVIDADE
+   ========================================================================== */
+@media (max-width: 768px) {
+  .topo {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .menu {
+    justify-content: center;
+  }
+
+  .form-linha {
+    flex-direction: column;
+    gap: var(--espaco-sm);
+  }
+
+  .acoes-form {
+    flex-direction: column;
+  }
+
+  .login-logos {
+    flex-direction: column;
+  }
 }
