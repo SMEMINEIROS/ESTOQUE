@@ -7,20 +7,21 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getDatabase,
-  ref,
-  push,
-  set,
-  update,
-  remove,
-  onValue,
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAQjgm3FRSAX93XdgTSWtkk7qW2DGkhybQ",
   authDomain: "estoque-uniformes.firebaseapp.com",
-  databaseURL: "https://estoque-uniformes-default-rtdb.firebaseio.com",
   projectId: "estoque-uniformes",
   storageBucket: "estoque-uniformes.firebasestorage.app",
   messagingSenderId: "1023222277443",
@@ -29,10 +30,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getDatabase(app);
+const db = getFirestore(app);
 
-const produtosRef = ref(db, "produtos");
-const movimentacoesRef = ref(db, "movimentacoes");
+const produtosCol = collection(db, "produtos");
+const movimentacoesCol = collection(db, "movimentacoes");
 
 /* ===== CACHES LOCAIS ===== */
 let produtosCache = [];
@@ -55,6 +56,8 @@ function mostrarFeedback(mensagem, tipo = "sucesso") {
 }
 
 /* ===== AUTENTICAÇÃO ===== */
+let listenersAtivos = false;
+
 formLogin.addEventListener("submit", async (e) => {
   e.preventDefault();
   loginErro.textContent = "";
@@ -81,6 +84,10 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     telaLogin.classList.remove("ativa");
     appEl.classList.remove("oculto");
+    if (!listenersAtivos) {
+      iniciarListeners();
+      listenersAtivos = true;
+    }
   } else {
     appEl.classList.add("oculto");
     telaLogin.classList.add("ativa");
@@ -113,6 +120,22 @@ navBtns.forEach((btn) => {
   });
 });
 
+/* ===== INICIAR LISTENERS FIRESTORE (apenas após login) ===== */
+function iniciarListeners() {
+  onSnapshot(query(produtosCol, orderBy("nome")), (snapshot) => {
+    produtosCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderizarTabelaProdutos();
+    atualizarSelectsProdutos();
+    atualizarDashboard();
+  }, (err) => mostrarFeedback("Erro ao carregar produtos: " + err.message, "erro"));
+
+  onSnapshot(query(movimentacoesCol, orderBy("criadoEm", "desc")), (snapshot) => {
+    movimentacoesCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderizarTabelaMovimentacoes();
+    atualizarDashboard();
+  }, (err) => mostrarFeedback("Erro ao carregar movimentações: " + err.message, "erro"));
+}
+
 /* ===== PRODUTOS: FORMULÁRIO (CRIAR / EDITAR) ===== */
 const formProduto = document.getElementById("form-produto");
 const produtoId = document.getElementById("produto-id");
@@ -141,7 +164,7 @@ formProduto.addEventListener("submit", async (e) => {
 
   try {
     if (produtoId.value) {
-      await update(ref(db, `produtos/${produtoId.value}`), {
+      await updateDoc(doc(db, "produtos", produtoId.value), {
         nome, categoria, tamanho, quantidade, estoqueMinimo
       });
       mostrarFeedback("Produto atualizado com sucesso.");
@@ -155,8 +178,7 @@ formProduto.addEventListener("submit", async (e) => {
         mostrarFeedback("Já existe um produto com esse nome, categoria e tamanho.", "erro");
         return;
       }
-      const novoRef = push(produtosRef);
-      await set(novoRef, {
+      await addDoc(produtosCol, {
         nome, categoria, tamanho, quantidade, estoqueMinimo,
         criadoEm: serverTimestamp()
       });
@@ -192,23 +214,12 @@ function editarProduto(p) {
 async function excluirProduto(id) {
   if (!confirm("Tem certeza que deseja excluir este produto?")) return;
   try {
-    await remove(ref(db, `produtos/${id}`));
+    await deleteDoc(doc(db, "produtos", id));
     mostrarFeedback("Produto excluído.");
   } catch (err) {
     mostrarFeedback("Erro ao excluir: " + err.message, "erro");
   }
 }
-
-/* ===== PRODUTOS: LISTAGEM EM TEMPO REAL ===== */
-onValue(produtosRef, (snapshot) => {
-  const dados = snapshot.val() || {};
-  produtosCache = Object.entries(dados)
-    .map(([id, p]) => ({ id, ...p }))
-    .sort((a, b) => a.nome.localeCompare(b.nome));
-  renderizarTabelaProdutos();
-  atualizarSelectsProdutos();
-  atualizarDashboard();
-});
 
 function renderizarTabelaProdutos() {
   tbodyProdutos.innerHTML = "";
@@ -276,12 +287,11 @@ formEntrada.addEventListener("submit", async (e) => {
   if (!produto) return;
 
   try {
-    await update(ref(db, `produtos/${produtoIdSel}`), {
+    await updateDoc(doc(db, "produtos", produtoIdSel), {
       quantidade: produto.quantidade + quantidade
     });
 
-    const novaMov = push(movimentacoesRef);
-    await set(novaMov, {
+    await addDoc(movimentacoesCol, {
       tipo: "entrada",
       produtoId: produtoIdSel,
       produtoNome: produto.nome,
@@ -324,12 +334,11 @@ formSaida.addEventListener("submit", async (e) => {
   }
 
   try {
-    await update(ref(db, `produtos/${produtoIdSel}`), {
+    await updateDoc(doc(db, "produtos", produtoIdSel), {
       quantidade: produto.quantidade - quantidade
     });
 
-    const novaMov = push(movimentacoesRef);
-    await set(novaMov, {
+    await addDoc(movimentacoesCol, {
       tipo: "saida",
       produtoId: produtoIdSel,
       produtoNome: produto.nome,
@@ -350,15 +359,6 @@ formSaida.addEventListener("submit", async (e) => {
 /* ===== MOVIMENTAÇÕES: LISTAGEM E FILTROS ===== */
 const tbodyMovimentacoes = document.getElementById("tbody-movimentacoes");
 const filtroTipo = document.getElementById("filtro-tipo");
-
-onValue(movimentacoesRef, (snapshot) => {
-  const dados = snapshot.val() || {};
-  movimentacoesCache = Object.entries(dados)
-    .map(([id, m]) => ({ id, ...m }))
-    .sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
-  renderizarTabelaMovimentacoes();
-  atualizarDashboard();
-});
 
 function renderizarTabelaMovimentacoes() {
   const filtroProd = selectFiltroProduto.value;
@@ -499,17 +499,16 @@ formTamanhosLote.addEventListener("submit", async (e) => {
   }
 
   try {
-    await Promise.all(itens.map(i => {
-      const novoRef = push(produtosRef);
-      return set(novoRef, {
+    await Promise.all(itens.map(i =>
+      addDoc(produtosCol, {
         nome,
         categoria,
         tamanho: i.tamanho,
         quantidade: i.quantidade,
         estoqueMinimo: i.estoqueMinimo,
         criadoEm: serverTimestamp()
-      });
-    }));
+      })
+    ));
     mostrarFeedback(`${itens.length} tamanho(s) cadastrado(s) com sucesso.`, "sucesso");
     fecharModalTamanhos();
   } catch (err) {
