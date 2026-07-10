@@ -1,17 +1,19 @@
 import { auth, db } from './firebase-config.js';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ============================================================================
 // ESTADO GLOBAL E REFERÊNCIAS
 // ============================================================================
 const produtosCol = collection(db, "produtos");
 const movimentacoesCol = collection(db, "movimentacoes");
+const kitsCol = collection(db, "kits");
 
 let produtosCache = [];
 let produtosFiltrados = [];
 let movimentacoesCache = [];
 let movimentacoesFiltradas = [];
+let kitsCache = [];
 
 const estadoPaginacao = {
   produtos: { atual: 1, limite: 10 },
@@ -94,6 +96,7 @@ function iniciarListeners() {
     produtosCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     aplicarFiltrosProdutos();
     atualizarSelectsProdutos();
+    atualizarSelectsKitsComponentes();
     atualizarDashboard();
   }, (err) => mostrarFeedback("Erro ao carregar produtos.", "erro"));
 
@@ -102,6 +105,12 @@ function iniciarListeners() {
     aplicarFiltrosMovimentacoes();
     atualizarDashboard();
   }, (err) => mostrarFeedback("Erro ao carregar movimentações.", "erro"));
+
+  onSnapshot(query(kitsCol, orderBy("nome")), (snapshot) => {
+    kitsCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderizarTabelaKits();
+    atualizarSelectKitsSaida();
+  }, (err) => mostrarFeedback("Erro ao carregar kits.", "erro"));
 }
 
 // ============================================================================
@@ -126,16 +135,13 @@ function atualizarDashboard() {
   if (listaUltimasMov) {
     const ultimas = movimentacoesCache.slice(0, 5);
     listaUltimasMov.innerHTML = ultimas.length
-      ? ultimas.map(m => `<li>${formatarData(m.data)} - ${m.tipo === "entrada" ? "Entrada" : "Saída"} de ${m.quantidade} ${m.produtoNome} (${m.produtoTamanho || '-'})</li>`).join("")
+      ? ultimas.map(m => `<li>${formatarData(m.data)} - ${m.tipo === "entrada" ? "Entrada" : "Saída"} de ${m.quantidade} ${m.produtoNome}</li>`).join("")
       : "<li>Nenhuma movimentação registrada.</li>";
   }
 }
 
 document.getElementById('btn-exportar-pdf')?.addEventListener('click', () => {
-  if (!window.jspdf) {
-    mostrarFeedback("Biblioteca PDF não carregada.", "erro");
-    return;
-  }
+  if (!window.jspdf) return mostrarFeedback("Biblioteca PDF não carregada.", "erro");
   
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -143,14 +149,14 @@ document.getElementById('btn-exportar-pdf')?.addEventListener('click', () => {
   doc.setFontSize(16);
   doc.text("Secretaria Municipal de Educação", 14, 20);
   doc.setFontSize(12);
-  doc.text("Relatório de Controle de Estoque de Uniformes", 14, 28);
+  doc.text("Relatório de Controle de Estoque", 14, 28);
   doc.setFontSize(10);
   doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 34);
 
   const corpoTabela = movimentacoesFiltradas.map(m => [
     formatarData(m.data),
     m.tipo === "entrada" ? "Entrada" : "Saída",
-    `${m.produtoNome} (${m.produtoTamanho || '-'})`,
+    m.produtoNome,
     m.quantidade,
     m.retiradoPor || "-"
   ]);
@@ -182,10 +188,10 @@ formProduto?.addEventListener("submit", async (e) => {
   try {
     if (id) {
       await updateDoc(doc(db, "produtos", id), { nome, categoria, tamanho, quantidade, estoqueMinimo });
-      mostrarFeedback("Produto atualizado com sucesso.");
+      mostrarFeedback("Produto atualizado.");
     } else {
       await addDoc(produtosCol, { nome, categoria, tamanho, quantidade, estoqueMinimo, criadoEm: serverTimestamp() });
-      mostrarFeedback("Produto cadastrado com sucesso.");
+      mostrarFeedback("Produto cadastrado.");
     }
     formProduto.reset();
     document.getElementById("produto-id").value = "";
@@ -229,13 +235,9 @@ window.excluirProduto = async function(id) {
 
 function aplicarFiltrosProdutos() {
   const termo = document.getElementById("busca-produto")?.value.toLowerCase() || "";
-  
   produtosFiltrados = produtosCache.filter(p => 
-    p.nome.toLowerCase().includes(termo) ||
-    p.categoria.toLowerCase().includes(termo) ||
-    p.tamanho.toLowerCase().includes(termo)
+    p.nome.toLowerCase().includes(termo) || p.categoria.toLowerCase().includes(termo) || p.tamanho.toLowerCase().includes(termo)
   );
-  
   estadoPaginacao.produtos.atual = 1;
   renderizarTabelaProdutos();
 }
@@ -265,46 +267,139 @@ function renderizarTabelaProdutos() {
     </tr>
   `).join("");
 
-  atualizarControlesPaginacaoProdutos();
-}
-
-function atualizarControlesPaginacaoProdutos() {
   const btnPrev = document.getElementById("btn-prev-prod");
   const btnNext = document.getElementById("btn-next-prod");
   const info = document.getElementById("info-pagina-prod");
-  const totalPaginas = Math.ceil(produtosFiltrados.length / estadoPaginacao.produtos.limite) || 1;
+  const totalPaginas = Math.ceil(produtosFiltrados.length / limite) || 1;
 
-  if (info) info.textContent = `Página ${estadoPaginacao.produtos.atual} de ${totalPaginas}`;
-  if (btnPrev) btnPrev.disabled = estadoPaginacao.produtos.atual === 1;
-  if (btnNext) btnNext.disabled = estadoPaginacao.produtos.atual === totalPaginas;
+  if (info) info.textContent = `Página ${atual} de ${totalPaginas}`;
+  if (btnPrev) btnPrev.disabled = atual === 1;
+  if (btnNext) btnNext.disabled = atual === totalPaginas;
 }
 
 document.getElementById("btn-prev-prod")?.addEventListener("click", () => {
-  if (estadoPaginacao.produtos.atual > 1) {
-    estadoPaginacao.produtos.atual--;
-    renderizarTabelaProdutos();
-  }
+  if (estadoPaginacao.produtos.atual > 1) { estadoPaginacao.produtos.atual--; renderizarTabelaProdutos(); }
 });
 
 document.getElementById("btn-next-prod")?.addEventListener("click", () => {
-  const totalPaginas = Math.ceil(produtosFiltrados.length / estadoPaginacao.produtos.limite);
-  if (estadoPaginacao.produtos.atual < totalPaginas) {
-    estadoPaginacao.produtos.atual++;
-    renderizarTabelaProdutos();
+  if (estadoPaginacao.produtos.atual < Math.ceil(produtosFiltrados.length / estadoPaginacao.produtos.limite)) {
+    estadoPaginacao.produtos.atual++; renderizarTabelaProdutos();
   }
 });
 
 // ============================================================================
-// MOVIMENTAÇÕES E MODAL DE LOTE
+// KITS: CRIAÇÃO E GERENCIAMENTO
+// ============================================================================
+const modalKit = document.getElementById("modal-criacao-kit");
+const containerLinhasKit = document.getElementById("kit-linhas-componentes");
+const templateLinhaKit = document.getElementById("template-linha-componente");
+
+document.getElementById("btn-abrir-modal-kit")?.addEventListener("click", () => {
+  document.getElementById("form-criacao-kit").reset();
+  containerLinhasKit.innerHTML = "";
+  adicionarLinhaKit();
+  modalKit.classList.remove("oculto");
+});
+
+const fecharModalKit = () => modalKit.classList.add("oculto");
+document.getElementById("btn-fechar-modal-kit")?.addEventListener("click", fecharModalKit);
+document.getElementById("btn-cancelar-criacao-kit")?.addEventListener("click", fecharModalKit);
+
+function atualizarSelectsKitsComponentes() {
+  const selects = containerLinhasKit.querySelectorAll(".comp-produto-input");
+  const opcoes = produtosCache.map(p => `<option value="${p.id}">${p.nome} - ${p.categoria} - ${p.tamanho}</option>`).join("");
+  selects.forEach(select => {
+    const valorAtual = select.value;
+    select.innerHTML = opcoes;
+    if (valorAtual) select.value = valorAtual;
+  });
+}
+
+function atualizarSelectKitsSaida() {
+  const select = document.getElementById("saida-kit");
+  if(select) {
+    select.innerHTML = kitsCache.map(k => `<option value="${k.id}">${k.nome}</option>`).join("");
+  }
+}
+
+function adicionarLinhaKit() {
+  const fragmento = templateLinhaKit.content.cloneNode(true);
+  const linha = fragmento.querySelector(".linha-componente");
+  const select = linha.querySelector(".comp-produto-input");
+  
+  select.innerHTML = produtosCache.map(p => `<option value="${p.id}">${p.nome} - ${p.tamanho}</option>`).join("");
+  
+  linha.querySelector(".btn-remover-linha").addEventListener("click", () => {
+    if (containerLinhasKit.children.length > 1) linha.remove();
+  });
+  containerLinhasKit.appendChild(linha);
+}
+
+document.getElementById("btn-add-linha-kit")?.addEventListener("click", adicionarLinhaKit);
+
+document.getElementById("form-criacao-kit")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const nome = document.getElementById("kit-nome").value.trim();
+  const linhas = Array.from(containerLinhasKit.querySelectorAll(".linha-componente"));
+  
+  const componentes = linhas.map(linha => ({
+    produtoId: linha.querySelector(".comp-produto-input").value,
+    quantidade: Number(linha.querySelector(".comp-quantidade-input").value)
+  }));
+
+  try {
+    await addDoc(kitsCol, { nome, componentes, criadoEm: serverTimestamp() });
+    mostrarFeedback("Modelo de Kit criado com sucesso.");
+    fecharModalKit();
+  } catch (err) {
+    mostrarFeedback("Erro ao criar kit.", "erro");
+  }
+});
+
+function renderizarTabelaKits() {
+  const tbody = document.getElementById("tbody-kits");
+  if (!tbody) return;
+
+  tbody.innerHTML = kitsCache.map(k => {
+    const compNomes = k.componentes.map(c => {
+      const p = produtosCache.find(prod => prod.id === c.produtoId);
+      return p ? `${c.quantidade}x ${p.nome} (${p.tamanho})` : 'Item removido';
+    }).join(', ');
+
+    return `<tr>
+      <td><strong>${k.nome}</strong></td>
+      <td><small>${compNomes}</small></td>
+      <td><button class="acao-excluir" onclick="excluirKit('${k.id}')">Excluir</button></td>
+    </tr>`;
+  }).join("");
+}
+
+window.excluirKit = async function(id) {
+  if (!confirm("Excluir este modelo de kit?")) return;
+  try { await deleteDoc(doc(db, "kits", id)); mostrarFeedback("Kit excluído."); } 
+  catch (err) { mostrarFeedback("Erro ao excluir.", "erro"); }
+};
+
+// ============================================================================
+// MOVIMENTAÇÕES: REGISTRO (AVULSO E KIT EM LOTE)
 // ============================================================================
 function atualizarSelectsProdutos() {
   const opcoes = produtosCache.map(p => `<option value="${p.id}">${p.nome} - ${p.categoria} - ${p.tamanho}</option>`).join("");
-  const selects = ["entrada-produto", "saida-produto", "filtro-produto"];
-  selects.forEach(id => {
+  ["entrada-produto", "saida-produto", "filtro-produto"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = id === "filtro-produto" ? `<option value="">Todos os produtos</option>${opcoes}` : opcoes;
+    if (el) el.innerHTML = id === "filtro-produto" ? `<option value="">Todos os itens</option>${opcoes}` : opcoes;
   });
 }
+
+document.querySelectorAll('input[name="tipo-saida"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    const isKit = e.target.value === 'kit';
+    document.getElementById("container-saida-produto").classList.toggle("oculto", isKit);
+    document.getElementById("saida-produto").required = !isKit;
+    document.getElementById("container-saida-kit").classList.toggle("oculto", !isKit);
+    document.getElementById("saida-kit").required = isKit;
+  });
+});
 
 document.getElementById("form-entrada")?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -319,7 +414,7 @@ document.getElementById("form-entrada")?.addEventListener("submit", async (e) =>
   try {
     await updateDoc(doc(db, "produtos", produtoId), { quantidade: produto.quantidade + quantidade });
     await addDoc(movimentacoesCol, {
-      tipo: "entrada", produtoId, produtoNome: produto.nome, produtoTamanho: produto.tamanho, quantidade, data, obs, criadoEm: serverTimestamp()
+      tipo: "entrada", produtoId, produtoNome: `${produto.nome} (${produto.tamanho})`, quantidade, data, obs, criadoEm: serverTimestamp()
     });
     mostrarFeedback("Entrada registrada com sucesso.");
     e.target.reset();
@@ -330,30 +425,77 @@ document.getElementById("form-entrada")?.addEventListener("submit", async (e) =>
 
 document.getElementById("form-saida")?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const produtoId = document.getElementById("saida-produto").value;
+  const tipoSaida = document.querySelector('input[name="tipo-saida"]:checked').value;
   const quantidade = Number(document.getElementById("saida-quantidade").value);
   const data = document.getElementById("saida-data").value;
   const retiradoPor = document.getElementById("saida-retirado-por").value.trim();
   const obs = document.getElementById("saida-obs").value.trim();
 
-  const produto = produtosCache.find(p => p.id === produtoId);
-  if (!produto || quantidade > produto.quantidade) {
-    mostrarFeedback("Quantidade insuficiente em estoque.", "erro");
-    return;
-  }
+  if (tipoSaida === "produto") {
+    const produtoId = document.getElementById("saida-produto").value;
+    const produto = produtosCache.find(p => p.id === produtoId);
+    
+    if (!produto || quantidade > produto.quantidade) return mostrarFeedback("Quantidade insuficiente em estoque.", "erro");
 
-  try {
-    await updateDoc(doc(db, "produtos", produtoId), { quantidade: produto.quantidade - quantidade });
-    await addDoc(movimentacoesCol, {
-      tipo: "saida", produtoId, produtoNome: produto.nome, produtoTamanho: produto.tamanho, quantidade, data, retiradoPor, obs, criadoEm: serverTimestamp()
-    });
-    mostrarFeedback("Saída registrada com sucesso.");
-    e.target.reset();
-  } catch (err) {
-    mostrarFeedback("Erro ao registrar saída.", "erro");
+    try {
+      await updateDoc(doc(db, "produtos", produtoId), { quantidade: produto.quantidade - quantidade });
+      await addDoc(movimentacoesCol, {
+        tipo: "saida", produtoId, produtoNome: `${produto.nome} (${produto.tamanho})`, quantidade, data, retiradoPor, obs, criadoEm: serverTimestamp()
+      });
+      mostrarFeedback("Saída avulsa registrada.");
+      e.target.reset();
+    } catch (err) { mostrarFeedback("Erro ao registrar saída.", "erro"); }
+  
+  } else {
+    const kitId = document.getElementById("saida-kit").value;
+    const kit = kitsCache.find(k => k.id === kitId);
+    if (!kit) return mostrarFeedback("Kit não encontrado.", "erro");
+
+    const operacoes = [];
+    const errosEstoque = [];
+
+    // Validar estoque preventivamente
+    for (let comp of kit.componentes) {
+      const p = produtosCache.find(x => x.id === comp.produtoId);
+      const qtdNecessaria = comp.quantidade * quantidade;
+      if (!p || p.quantidade < qtdNecessaria) {
+        errosEstoque.push(`${p ? p.nome : 'Item'} (Faltam ${qtdNecessaria - (p?.quantidade || 0)})`);
+      } else {
+        operacoes.push({ ref: doc(db, "produtos", p.id), novaQtd: p.quantidade - qtdNecessaria });
+      }
+    }
+
+    if (errosEstoque.length > 0) {
+      return mostrarFeedback(`Estoque insuficiente para: ${errosEstoque.join(', ')}`, "erro");
+    }
+
+    try {
+      const batch = writeBatch(db);
+      // Deduzir produtos
+      operacoes.forEach(op => batch.update(op.ref, { quantidade: op.novaQtd }));
+      
+      // Registrar movimentação centralizada
+      const movRef = doc(collection(db, "movimentacoes"));
+      batch.set(movRef, {
+        tipo: "saida",
+        produtoNome: `KIT: ${kit.nome}`,
+        quantidade: quantidade,
+        data, retiradoPor, obs, criadoEm: serverTimestamp(),
+        isKit: true, componentesBaixados: kit.componentes
+      });
+
+      await batch.commit();
+      mostrarFeedback(`Saída de ${quantidade} kit(s) registrada com sucesso.`);
+      e.target.reset();
+    } catch (err) {
+      mostrarFeedback("Erro na transação de saída do kit.", "erro");
+    }
   }
 });
 
+// ============================================================================
+// MOVIMENTAÇÕES: FILTROS E PAGINAÇÃO
+// ============================================================================
 function aplicarFiltrosMovimentacoes() {
   const termo = document.getElementById("busca-texto")?.value.toLowerCase() || "";
   const data = document.getElementById("busca-data")?.value || "";
@@ -364,7 +506,7 @@ function aplicarFiltrosMovimentacoes() {
     const matchTermo = m.produtoNome.toLowerCase().includes(termo) || (m.retiradoPor || "").toLowerCase().includes(termo);
     const matchData = data ? m.data === data : true;
     const matchTipo = tipo ? m.tipo === tipo : true;
-    const matchProduto = produtoId ? m.produtoId === produtoId : true;
+    const matchProduto = produtoId ? (m.produtoId === produtoId) : true; 
     return matchTermo && matchData && matchTipo && matchProduto;
   });
 
@@ -389,49 +531,43 @@ function renderizarTabelaMovimentacoes() {
     <tr>
       <td>${formatarData(m.data)}</td>
       <td>${m.tipo === "entrada" ? "Entrada" : "Saída"}</td>
-      <td>${m.produtoNome} (Tamanho: ${m.produtoTamanho || '-'})</td>
+      <td><strong>${m.produtoNome}</strong></td>
       <td>${m.quantidade}</td>
       <td>${m.retiradoPor || "-"}</td>
       <td>${m.obs || "-"}</td>
     </tr>
   `).join("");
 
-  atualizarControlesPaginacaoMov();
-}
-
-function atualizarControlesPaginacaoMov() {
   const btnPrev = document.getElementById("btn-prev-mov");
   const btnNext = document.getElementById("btn-next-mov");
   const info = document.getElementById("info-pagina-mov");
-  const totalPaginas = Math.ceil(movimentacoesFiltradas.length / estadoPaginacao.movimentacoes.limite) || 1;
+  const totalPaginas = Math.ceil(movimentacoesFiltradas.length / limite) || 1;
 
-  if (info) info.textContent = `Página ${estadoPaginacao.movimentacoes.atual} de ${totalPaginas}`;
-  if (btnPrev) btnPrev.disabled = estadoPaginacao.movimentacoes.atual === 1;
-  if (btnNext) btnNext.disabled = estadoPaginacao.movimentacoes.atual === totalPaginas;
+  if (info) info.textContent = `Página ${atual} de ${totalPaginas}`;
+  if (btnPrev) btnPrev.disabled = atual === 1;
+  if (btnNext) btnNext.disabled = atual === totalPaginas;
 }
 
 document.getElementById("btn-prev-mov")?.addEventListener("click", () => {
-  if (estadoPaginacao.movimentacoes.atual > 1) {
-    estadoPaginacao.movimentacoes.atual--;
-    renderizarTabelaMovimentacoes();
-  }
+  if (estadoPaginacao.movimentacoes.atual > 1) { estadoPaginacao.movimentacoes.atual--; renderizarTabelaMovimentacoes(); }
 });
 
 document.getElementById("btn-next-mov")?.addEventListener("click", () => {
-  const totalPaginas = Math.ceil(movimentacoesFiltradas.length / estadoPaginacao.movimentacoes.limite);
-  if (estadoPaginacao.movimentacoes.atual < totalPaginas) {
-    estadoPaginacao.movimentacoes.atual++;
-    renderizarTabelaMovimentacoes();
+  if (estadoPaginacao.movimentacoes.atual < Math.ceil(movimentacoesFiltradas.length / estadoPaginacao.movimentacoes.limite)) {
+    estadoPaginacao.movimentacoes.atual++; renderizarTabelaMovimentacoes();
   }
 });
 
+// ============================================================================
+// MODAL DE CADASTRO EM LOTE (TAMANHOS)
+// ============================================================================
 const modalTamanhos = document.getElementById("modal-tamanhos");
-const containerLinhas = document.getElementById("lote-linhas-tamanhos");
-const templateLinha = document.getElementById("template-linha-tamanho");
+const containerLinhasTamanhos = document.getElementById("lote-linhas-tamanhos");
+const templateLinhaTamanho = document.getElementById("template-linha-tamanho");
 
 document.getElementById("btn-abrir-tamanhos")?.addEventListener("click", () => {
   document.getElementById("form-tamanhos-lote").reset();
-  containerLinhas.innerHTML = "";
+  containerLinhasTamanhos.innerHTML = "";
   adicionarLinhaTamanho();
   modalTamanhos.classList.remove("oculto");
 });
@@ -441,12 +577,12 @@ document.getElementById("btn-fechar-tamanhos")?.addEventListener("click", fechar
 document.getElementById("btn-cancelar-lote")?.addEventListener("click", fecharModalTamanhos);
 
 function adicionarLinhaTamanho() {
-  const fragmento = templateLinha.content.cloneNode(true);
+  const fragmento = templateLinhaTamanho.content.cloneNode(true);
   const linha = fragmento.querySelector(".linha-tamanho");
   linha.querySelector(".btn-remover-linha").addEventListener("click", () => {
-    if (containerLinhas.children.length > 1) linha.remove();
+    if (containerLinhasTamanhos.children.length > 1) linha.remove();
   });
-  containerLinhas.appendChild(linha);
+  containerLinhasTamanhos.appendChild(linha);
 }
 
 document.getElementById("btn-add-linha-tamanho")?.addEventListener("click", adicionarLinhaTamanho);
@@ -455,8 +591,8 @@ document.getElementById("form-tamanhos-lote")?.addEventListener("submit", async 
   e.preventDefault();
   const nome = document.getElementById("lote-nome").value.trim();
   const categoria = document.getElementById("lote-categoria").value.trim();
-
-  const linhas = Array.from(containerLinhas.querySelectorAll(".linha-tamanho"));
+  const linhas = Array.from(containerLinhasTamanhos.querySelectorAll(".linha-tamanho"));
+  
   const itens = linhas.map(linha => ({
     tamanho: linha.querySelector(".lote-tamanho-input").value.trim(),
     quantidade: Number(linha.querySelector(".lote-quantidade-input").value),
