@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Estoque</title>
+  <title>Controle de Estoque de Uniformes</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -16,7 +16,7 @@
         <img src="assets/logo-prefeitura.png" alt="Logo Prefeitura de Mineiros" class="login-logo">
         <img src="assets/logo-secretaria.png" alt="Logo Secretaria Municipal de Educação" class="login-logo">
       </div>
-      <h1>ESTOQUE</h1>
+      <h1>Estoque</h1>
       <form id="form-login">
         <label for="login-email">Email</label>
         <input type="email" id="login-email" required autocomplete="username">
@@ -30,10 +30,11 @@
 
   <div id="app" class="oculto">
     <header class="topo">
-      <h1>ESTOQUE</h1>
+      <h1>Estoque de Uniformes</h1>
       <nav class="menu" aria-label="Navegação principal">
         <button class="nav-btn ativo" data-tela="dashboard">Dashboard</button>
         <button class="nav-btn" data-tela="produtos">Produtos</button>
+        <button class="nav-btn" data-tela="kits">Kits</button>
         <button class="nav-btn" data-tela="movimentacoes">Movimentações</button>
       </nav>
       <button id="btn-logout" class="btn-secundario">Sair</button>
@@ -42,6 +43,7 @@
     <main>
       <div id="feedback-global" class="feedback oculto"></div>
 
+      <!-- TELA DASHBOARD -->
       <section id="tela-dashboard" class="tela-interna ativa">
         <div class="header-dashboard">
           <h2>Visão Geral</h2>
@@ -69,6 +71,7 @@
         <ul id="lista-ultimas-mov" class="lista-simples"></ul>
       </section>
 
+      <!-- TELA PRODUTOS -->
       <section id="tela-produtos" class="tela-interna">
         <h2>Cadastro de Produtos</h2>
 
@@ -127,44 +130,85 @@
         </div>
       </section>
 
+      <!-- TELA KITS -->
+      <section id="tela-kits" class="tela-interna">
+        <div class="header-dashboard">
+          <h2>Gerenciar Kits (Modelos)</h2>
+          <button id="btn-abrir-modal-kit" class="btn-primario">Criar Novo Kit</button>
+        </div>
+        
+        <div class="tabela-wrap">
+          <table>
+            <thead>
+              <tr><th>Nome do Kit</th><th>Componentes</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="tbody-kits"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TELA MOVIMENTAÇÕES -->
       <section id="tela-movimentacoes" class="tela-interna">
         <h2>Entradas e Saídas</h2>
         <div class="mov-grid">
+          
           <form id="form-entrada" class="form-card">
             <h3>Registrar Entrada</h3>
-            <label for="entrada-produto">Produto</label>
+            <label for="entrada-produto">Produto Avulso</label>
             <select id="entrada-produto" required></select>
+            
             <label for="entrada-quantidade">Quantidade</label>
             <input type="number" id="entrada-quantidade" min="1" required>
+            
             <label for="entrada-data">Data</label>
             <input type="date" id="entrada-data" required>
+            
             <label for="entrada-obs">Observação (opcional)</label>
             <textarea id="entrada-obs"></textarea>
+            
             <button type="submit">Registrar Entrada</button>
           </form>
 
           <form id="form-saida" class="form-card">
             <h3>Registrar Saída</h3>
-            <label for="saida-produto">Produto</label>
-            <select id="saida-produto" required></select>
+            
+            <div class="radio-group">
+              <label><input type="radio" name="tipo-saida" value="produto" checked> Produto Avulso</label>
+              <label><input type="radio" name="tipo-saida" value="kit"> Kit Fechado</label>
+            </div>
+
+            <div id="container-saida-produto" class="campo">
+              <label for="saida-produto">Produto</label>
+              <select id="saida-produto"></select>
+            </div>
+
+            <div id="container-saida-kit" class="campo oculto">
+              <label for="saida-kit">Modelo do Kit</label>
+              <select id="saida-kit"></select>
+            </div>
+
             <label for="saida-quantidade">Quantidade</label>
             <input type="number" id="saida-quantidade" min="1" required>
+            
             <label for="saida-data">Data</label>
             <input type="date" id="saida-data" required>
+            
             <label for="saida-retirado-por">Retirado por</label>
             <input type="text" id="saida-retirado-por" required>
+            
             <label for="saida-obs">Observação (opcional)</label>
             <textarea id="saida-obs"></textarea>
+            
             <button type="submit">Registrar Saída</button>
           </form>
         </div>
 
         <h3>Histórico de Movimentações</h3>
         <div class="filtros-avancados">
-          <input type="text" id="busca-texto" placeholder="Buscar produto ou responsável">
+          <input type="text" id="busca-texto" placeholder="Buscar produto, kit ou responsável">
           <input type="date" id="busca-data" aria-label="Filtrar por data">
           <select id="filtro-produto">
-            <option value="">Todos os produtos</option>
+            <option value="">Todos os itens</option>
           </select>
           <select id="filtro-tipo">
             <option value="">Todos os tipos</option>
@@ -176,7 +220,7 @@
         <div class="tabela-wrap">
           <table>
             <thead>
-              <tr><th>Data</th><th>Tipo</th><th>Produto (Tamanho)</th><th>Qtd.</th><th>Retirado por</th><th>Obs.</th></tr>
+              <tr><th>Data</th><th>Tipo</th><th>Item Movimentado</th><th>Qtd.</th><th>Retirado por</th><th>Obs.</th></tr>
             </thead>
             <tbody id="tbody-movimentacoes"></tbody>
           </table>
@@ -190,13 +234,13 @@
     </main>
   </div>
 
+  <!-- MODAL: CADASTRO EM LOTE DE TAMANHOS -->
   <div id="modal-tamanhos" class="modal-overlay oculto">
     <div class="modal-box">
       <div class="modal-header">
         <h2>Cadastro em Lote de Tamanhos</h2>
         <button type="button" id="btn-fechar-tamanhos" class="btn-fechar" aria-label="Fechar">&times;</button>
       </div>
-
       <form id="form-tamanhos-lote">
         <div class="form-linha">
           <div class="campo">
@@ -208,11 +252,8 @@
             <input type="text" id="lote-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
           </div>
         </div>
-
         <div id="lote-linhas-tamanhos"></div>
-
         <button type="button" id="btn-add-linha-tamanho" class="btn-secundario">+ Adicionar tamanho</button>
-
         <div class="acoes-form">
           <button type="submit">Salvar Tamanhos</button>
           <button type="button" id="btn-cancelar-lote" class="btn-secundario">Cancelar</button>
@@ -221,6 +262,33 @@
     </div>
   </div>
 
+  <!-- MODAL: CRIAÇÃO DE KITS -->
+  <div id="modal-criacao-kit" class="modal-overlay oculto">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Montar Modelo de Kit</h2>
+        <button type="button" id="btn-fechar-modal-kit" class="btn-fechar" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="form-criacao-kit">
+        <div class="campo" style="margin-bottom: var(--espaco-md);">
+          <label for="kit-nome">Nome do Kit</label>
+          <input type="text" id="kit-nome" placeholder="Ex: Kit Escolar 1º Ano" required>
+        </div>
+        
+        <h3>Componentes do Kit</h3>
+        <div id="kit-linhas-componentes"></div>
+        
+        <button type="button" id="btn-add-linha-kit" class="btn-secundario">+ Adicionar Componente</button>
+        
+        <div class="acoes-form">
+          <button type="submit">Salvar Kit</button>
+          <button type="button" id="btn-cancelar-criacao-kit" class="btn-secundario">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TEMPLATES -->
   <template id="template-linha-tamanho">
     <div class="linha-tamanho form-linha">
       <div class="campo">
@@ -236,6 +304,20 @@
         <input type="number" class="lote-minimo-input" min="0" required>
       </div>
       <button type="button" class="btn-remover-linha btn-secundario" aria-label="Remover tamanho">Remover</button>
+    </div>
+  </template>
+
+  <template id="template-linha-componente">
+    <div class="linha-componente form-linha" style="background: var(--cor-fundo); padding: var(--espaco-sm); border-radius: var(--raio); margin-bottom: var(--espaco-sm);">
+      <div class="campo">
+        <label>Produto</label>
+        <select class="comp-produto-input" required></select>
+      </div>
+      <div class="campo" style="flex: 0 1 120px;">
+        <label>Qtd. por Kit</label>
+        <input type="number" class="comp-quantidade-input" min="1" value="1" required>
+      </div>
+      <button type="button" class="btn-remover-linha btn-secundario" style="height: fit-content; align-self: flex-end;" aria-label="Remover componente">Remover</button>
     </div>
   </template>
 
