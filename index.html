@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Estoque de Uniformes</title>
+  <title>Controle de Estoque de Uniformes e Materiais</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -16,7 +17,7 @@
         <img src="assets/logo-prefeitura.png" alt="Logo Prefeitura de Mineiros" class="login-logo">
         <img src="assets/logo-secretaria.png" alt="Logo Secretaria Municipal de Educação" class="login-logo">
       </div>
-      <h1>Estoque</h1>
+      <h1>Estoque SME</h1>
       <form id="form-login">
         <label for="login-email">Email</label>
         <input type="email" id="login-email" required autocomplete="username">
@@ -30,7 +31,7 @@
 
   <div id="app" class="oculto">
     <header class="topo">
-      <h1>Estoque de Uniformes</h1>
+      <h1>Estoque SME</h1>
       <nav class="menu" aria-label="Navegação principal">
         <button class="nav-btn ativo" data-tela="dashboard">Dashboard</button>
         <button class="nav-btn" data-tela="produtos">Produtos</button>
@@ -43,82 +44,97 @@
     <main>
       <div id="feedback-global" class="feedback oculto"></div>
 
-      <!-- TELA DASHBOARD -->
+      <!-- TELA DASHBOARD MODERNIZADA -->
       <section id="tela-dashboard" class="tela-interna ativa">
         <div class="header-dashboard">
-          <h2>Visão Geral</h2>
-          <button id="btn-exportar-pdf" class="btn-primario">Exportar Relatório PDF</button>
+          <h2>Visão Geral do Estoque</h2>
+          <button id="btn-exportar-pdf" class="btn-primario">Exportar Relatório Mensal</button>
         </div>
+
+        <div class="filtros-avancados dashboard-busca">
+          <input type="text" id="busca-global" placeholder="Busca rápida por material ou responsável...">
+          <button id="btn-busca-global-prod" class="btn-secundario">Buscar em Produtos</button>
+          <button id="btn-busca-global-mov" class="btn-secundario">Buscar em Movimentações</button>
+        </div>
+
         <div class="cards-grid">
           <div class="card">
-            <span class="card-label">Total de itens em estoque</span>
+            <span class="card-label">Volume Total de Materiais</span>
             <span class="card-valor" id="kpi-total-itens">-</span>
           </div>
-          <div class="card">
-            <span class="card-label">Produtos cadastrados</span>
-            <span class="card-valor" id="kpi-total-produtos">-</span>
-          </div>
           <div class="card card-alerta">
-            <span class="card-label">Itens com estoque baixo</span>
+            <span class="card-label">Alertas de Estoque Crítico</span>
             <span class="card-valor" id="kpi-estoque-baixo">-</span>
+          </div>
+          <div class="card">
+            <span class="card-label">Movimentações Registradas (Mês)</span>
+            <span class="card-valor" id="kpi-mov-mes">-</span>
           </div>
         </div>
 
-        <h3>Produtos com estoque baixo</h3>
-        <ul id="lista-estoque-baixo" class="lista-simples"></ul>
-
-        <h3>Últimas movimentações</h3>
-        <ul id="lista-ultimas-mov" class="lista-simples"></ul>
+        <div class="dashboard-charts">
+          <div class="chart-card form-card">
+            <h3>Distribuição por Categoria</h3>
+            <div class="canvas-container">
+              <canvas id="grafico-categorias"></canvas>
+            </div>
+          </div>
+          <div class="chart-card form-card">
+            <h3>Fluxo de Entradas vs Saídas</h3>
+            <div class="canvas-container">
+              <canvas id="grafico-movimentacoes"></canvas>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- TELA PRODUTOS -->
       <section id="tela-produtos" class="tela-interna">
-        <h2>Cadastro de Produtos</h2>
-
+        <h2>Catálogo de Materiais</h2>
         <div class="acoes-topo">
-          <button type="button" id="btn-abrir-tamanhos" class="btn-secundario">Cadastro em Lote (Tamanhos)</button>
+          <button type="button" id="btn-abrir-tamanhos" class="btn-secundario">Cadastro em Lote</button>
         </div>
 
         <form id="form-produto" class="form-card">
           <input type="hidden" id="produto-id">
           <div class="form-linha">
             <div class="campo">
-              <label for="produto-nome">Nome</label>
+              <label for="produto-nome">Nome do Material</label>
               <input type="text" id="produto-nome" required>
             </div>
             <div class="campo">
               <label for="produto-categoria">Categoria</label>
-              <input type="text" id="produto-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
+              <input type="text" id="produto-categoria" placeholder="Ex: Papelaria, Uniforme..." required>
             </div>
           </div>
           <div class="form-linha">
             <div class="campo">
-              <label for="produto-tamanho">Tamanho/Numeração</label>
+              <label for="produto-tamanho">Tamanho/Especificação</label>
               <input type="text" id="produto-tamanho" required>
             </div>
             <div class="campo">
-              <label for="produto-quantidade">Quantidade inicial</label>
+              <label for="produto-quantidade">Quantidade em Estoque</label>
               <input type="number" id="produto-quantidade" min="0" required>
             </div>
             <div class="campo">
-              <label for="produto-minimo">Estoque mínimo</label>
+              <label for="produto-minimo">Alerta de Estoque Mínimo</label>
               <input type="number" id="produto-minimo" min="0" required>
             </div>
           </div>
           <div class="acoes-form">
-            <button type="submit" id="btn-salvar-produto">Cadastrar Produto</button>
-            <button type="button" id="btn-cancelar-edicao" class="btn-secundario oculto">Cancelar edição</button>
+            <button type="submit" id="btn-salvar-produto">Salvar Material</button>
+            <button type="button" id="btn-cancelar-edicao" class="btn-secundario oculto">Cancelar</button>
           </div>
         </form>
 
-        <h3>Produtos cadastrados</h3>
+        <h3>Itens Cadastrados</h3>
         <div class="filtros-avancados">
-          <input type="text" id="busca-produto" placeholder="Buscar por nome, categoria ou tamanho...">
+          <input type="text" id="busca-produto" placeholder="Filtrar materiais...">
         </div>
         <div class="tabela-wrap">
           <table>
             <thead>
-              <tr><th>Nome</th><th>Categoria</th><th>Tamanho</th><th>Qtd.</th><th>Mín.</th><th>Ações</th></tr>
+              <tr><th>Item</th><th>Categoria</th><th>Especificação</th><th>Saldo</th><th>Mín.</th><th>Ações</th></tr>
             </thead>
             <tbody id="tbody-produtos"></tbody>
           </table>
@@ -133,14 +149,14 @@
       <!-- TELA KITS -->
       <section id="tela-kits" class="tela-interna">
         <div class="header-dashboard">
-          <h2>Gerenciar Kits (Modelos)</h2>
-          <button id="btn-abrir-modal-kit" class="btn-primario">Criar Novo Kit</button>
+          <h2>Estrutura de Kits Escolares</h2>
+          <button id="btn-abrir-modal-kit" class="btn-primario">Montar Novo Kit</button>
         </div>
         
         <div class="tabela-wrap">
           <table>
             <thead>
-              <tr><th>Nome do Kit</th><th>Componentes</th><th>Ações</th></tr>
+              <tr><th>Nomenclatura do Kit</th><th>Composição Técnica</th><th>Ações</th></tr>
             </thead>
             <tbody id="tbody-kits"></tbody>
           </table>
@@ -149,175 +165,149 @@
 
       <!-- TELA MOVIMENTAÇÕES -->
       <section id="tela-movimentacoes" class="tela-interna">
-        <h2>Entradas e Saídas</h2>
+        <h2>Controle Operacional</h2>
         <div class="mov-grid">
           
           <form id="form-entrada" class="form-card">
-            <h3>Registrar Entrada</h3>
-            <label for="entrada-produto">Produto Avulso</label>
+            <h3>Registrar Reposição (Entrada)</h3>
+            <label for="entrada-produto">Material Recebido</label>
             <select id="entrada-produto" required></select>
             
-            <label for="entrada-quantidade">Quantidade</label>
+            <label for="entrada-quantidade">Quantidade Adicionada</label>
             <input type="number" id="entrada-quantidade" min="1" required>
             
-            <label for="entrada-data">Data</label>
+            <label for="entrada-data">Data do Recebimento</label>
             <input type="date" id="entrada-data" required>
             
-            <label for="entrada-obs">Observação (opcional)</label>
+            <label for="entrada-obs">Notas Adicionais</label>
             <textarea id="entrada-obs"></textarea>
             
-            <button type="submit">Registrar Entrada</button>
+            <button type="submit">Confirmar Entrada</button>
           </form>
 
           <form id="form-saida" class="form-card">
-            <h3>Registrar Saída</h3>
+            <h3>Registrar Distribuição (Saída)</h3>
             
             <div class="radio-group">
-              <label><input type="radio" name="tipo-saida" value="produto" checked> Produto Avulso</label>
+              <label><input type="radio" name="tipo-saida" value="produto" checked> Material Avulso</label>
               <label><input type="radio" name="tipo-saida" value="kit"> Kit Fechado</label>
             </div>
 
             <div id="container-saida-produto" class="campo">
-              <label for="saida-produto">Produto</label>
+              <label for="saida-produto">Selecionar Material</label>
               <select id="saida-produto"></select>
             </div>
 
             <div id="container-saida-kit" class="campo oculto">
-              <label for="saida-kit">Modelo do Kit</label>
+              <label for="saida-kit">Selecionar Estrutura de Kit</label>
               <select id="saida-kit"></select>
             </div>
 
-            <label for="saida-quantidade">Quantidade</label>
+            <label for="saida-quantidade">Volume Distribuído</label>
             <input type="number" id="saida-quantidade" min="1" required>
             
-            <label for="saida-data">Data</label>
+            <label for="saida-data">Data da Retirada</label>
             <input type="date" id="saida-data" required>
             
-            <label for="saida-retirado-por">Retirado por</label>
+            <label for="saida-retirado-por">Responsável pela Retirada</label>
             <input type="text" id="saida-retirado-por" required>
             
-            <label for="saida-obs">Observação (opcional)</label>
+            <label for="saida-obs">Observações</label>
             <textarea id="saida-obs"></textarea>
             
-            <button type="submit">Registrar Saída</button>
+            <button type="submit">Efetivar Saída</button>
           </form>
         </div>
 
-        <h3>Histórico de Movimentações</h3>
+        <h3>Trilha de Auditoria</h3>
         <div class="filtros-avancados">
-          <input type="text" id="busca-texto" placeholder="Buscar produto, kit ou responsável">
-          <input type="date" id="busca-data" aria-label="Filtrar por data">
+          <input type="text" id="busca-texto" placeholder="Pesquisar termo ou responsável...">
+          <input type="date" id="busca-data" aria-label="Filtrar por data exata">
           <select id="filtro-produto">
-            <option value="">Todos os itens</option>
+            <option value="">Todo o inventário</option>
           </select>
           <select id="filtro-tipo">
-            <option value="">Todos os tipos</option>
-            <option value="entrada">Entradas</option>
-            <option value="saida">Saídas</option>
+            <option value="">Todas as operações</option>
+            <option value="entrada">Apenas Reposições</option>
+            <option value="saida">Apenas Distribuições</option>
           </select>
         </div>
 
         <div class="tabela-wrap">
           <table>
             <thead>
-              <tr><th>Data</th><th>Tipo</th><th>Item Movimentado</th><th>Qtd.</th><th>Retirado por</th><th>Obs.</th></tr>
+              <tr><th>Data</th><th>Operação</th><th>Material/Kit</th><th>Volume</th><th>Destino/Responsável</th><th>Detalhes</th></tr>
             </thead>
             <tbody id="tbody-movimentacoes"></tbody>
           </table>
           <div class="paginacao-controles">
-            <button id="btn-prev-mov" class="btn-secundario" disabled>&larr; Anterior</button>
+            <button id="btn-prev-mov" class="btn-secundario" disabled>&larr; Recuar</button>
             <span id="info-pagina-mov">Página 1</span>
-            <button id="btn-next-mov" class="btn-secundario">Próxima &rarr;</button>
+            <button id="btn-next-mov" class="btn-secundario">Avançar &rarr;</button>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- MODAL: CADASTRO EM LOTE DE TAMANHOS -->
   <div id="modal-tamanhos" class="modal-overlay oculto">
+    <!-- Estrutura do modal mantida conforme iteração anterior -->
     <div class="modal-box">
       <div class="modal-header">
-        <h2>Cadastro em Lote de Tamanhos</h2>
+        <h2>Entrada Rápida em Lote</h2>
         <button type="button" id="btn-fechar-tamanhos" class="btn-fechar" aria-label="Fechar">&times;</button>
       </div>
       <form id="form-tamanhos-lote">
         <div class="form-linha">
-          <div class="campo">
-            <label for="lote-nome">Nome do produto</label>
-            <input type="text" id="lote-nome" required>
-          </div>
-          <div class="campo">
-            <label for="lote-categoria">Categoria</label>
-            <input type="text" id="lote-categoria" placeholder="Camisa, Calça, Jaqueta..." required>
-          </div>
+          <div class="campo"><label>Nome</label><input type="text" id="lote-nome" required></div>
+          <div class="campo"><label>Categoria</label><input type="text" id="lote-categoria" required></div>
         </div>
         <div id="lote-linhas-tamanhos"></div>
-        <button type="button" id="btn-add-linha-tamanho" class="btn-secundario">+ Adicionar tamanho</button>
+        <button type="button" id="btn-add-linha-tamanho" class="btn-secundario">+ Variação</button>
         <div class="acoes-form">
-          <button type="submit">Salvar Tamanhos</button>
+          <button type="submit">Processar Lote</button>
           <button type="button" id="btn-cancelar-lote" class="btn-secundario">Cancelar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: CRIAÇÃO DE KITS -->
   <div id="modal-criacao-kit" class="modal-overlay oculto">
     <div class="modal-box">
       <div class="modal-header">
-        <h2>Montar Modelo de Kit</h2>
+        <h2>Definir Composição do Kit</h2>
         <button type="button" id="btn-fechar-modal-kit" class="btn-fechar" aria-label="Fechar">&times;</button>
       </div>
       <form id="form-criacao-kit">
         <div class="campo" style="margin-bottom: var(--espaco-md);">
-          <label for="kit-nome">Nome do Kit</label>
-          <input type="text" id="kit-nome" placeholder="Ex: Kit Escolar 1º Ano" required>
+          <label for="kit-nome">Identificador do Kit</label>
+          <input type="text" id="kit-nome" placeholder="Ex: Material Escolar Ensino Fundamental" required>
         </div>
-        
-        <h3>Componentes do Kit</h3>
+        <h3>Matriz de Itens</h3>
         <div id="kit-linhas-componentes"></div>
-        
-        <button type="button" id="btn-add-linha-kit" class="btn-secundario">+ Adicionar Componente</button>
-        
+        <button type="button" id="btn-add-linha-kit" class="btn-secundario">+ Inserir Material</button>
         <div class="acoes-form">
-          <button type="submit">Salvar Kit</button>
-          <button type="button" id="btn-cancelar-criacao-kit" class="btn-secundario">Cancelar</button>
+          <button type="submit">Homologar Kit</button>
+          <button type="button" id="btn-cancelar-criacao-kit" class="btn-secundario">Descartar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- TEMPLATES -->
   <template id="template-linha-tamanho">
     <div class="linha-tamanho form-linha">
-      <div class="campo">
-        <label>Tamanho</label>
-        <input type="text" class="lote-tamanho-input" required>
-      </div>
-      <div class="campo">
-        <label>Quantidade</label>
-        <input type="number" class="lote-quantidade-input" min="0" required>
-      </div>
-      <div class="campo">
-        <label>Estoque mínimo</label>
-        <input type="number" class="lote-minimo-input" min="0" required>
-      </div>
-      <button type="button" class="btn-remover-linha btn-secundario" aria-label="Remover tamanho">Remover</button>
+      <div class="campo"><label>Especificação</label><input type="text" class="lote-tamanho-input" required></div>
+      <div class="campo"><label>Volume</label><input type="number" class="lote-quantidade-input" min="0" required></div>
+      <div class="campo"><label>Mínimo</label><input type="number" class="lote-minimo-input" min="0" required></div>
+      <button type="button" class="btn-remover-linha btn-secundario">Excluir</button>
     </div>
   </template>
 
   <template id="template-linha-componente">
     <div class="linha-componente form-linha" style="background: var(--cor-fundo); padding: var(--espaco-sm); border-radius: var(--raio); margin-bottom: var(--espaco-sm);">
-      <div class="campo">
-        <label>Produto</label>
-        <select class="comp-produto-input" required></select>
-      </div>
-      <div class="campo" style="flex: 0 1 120px;">
-        <label>Qtd. por Kit</label>
-        <input type="number" class="comp-quantidade-input" min="1" value="1" required>
-      </div>
-      <button type="button" class="btn-remover-linha btn-secundario" style="height: fit-content; align-self: flex-end;" aria-label="Remover componente">Remover</button>
+      <div class="campo"><label>Vínculo</label><select class="comp-produto-input" required></select></div>
+      <div class="campo" style="flex: 0 1 120px;"><label>Proporção</label><input type="number" class="comp-quantidade-input" min="1" value="1" required></div>
+      <button type="button" class="btn-remover-linha btn-secundario" style="height: fit-content; align-self: flex-end;">Remover</button>
     </div>
   </template>
 
