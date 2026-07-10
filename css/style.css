@@ -267,7 +267,7 @@ img {
 }
 
 .btn-primario:hover {
-  background-color: var(--cor-destaque-hover);
+  background: var(--cor-destaque-hover);
 }
 
 main {
@@ -403,6 +403,21 @@ main h3 {
 .form-card textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.radio-group {
+  display: flex;
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-sm);
+}
+
+.radio-group label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .acoes-form {
